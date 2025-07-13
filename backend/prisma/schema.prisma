@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int                @id @default(autoincrement())
+  email            String             @unique
+  password         String?
+  name             String?
+  oauthProvider    String?
+  oauthId          String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  collections      Collection[]
+  memberships      CollectionMember[]
+  comments         Comment[]
+  favoriteArticles FavoriteStatus[]
+  feedsCreated     Feed[]
+  messages         Message[]
+  readArticles     ReadStatus[]
+}
+
+model Collection {
+  id          Int                @id @default(autoincrement())
+  name        String
+  description String?
+  isShared    Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  creatorId   Int
+  creator     User               @relation(fields: [creatorId], references: [id])
+  members     CollectionMember[]
+  feeds       Feed[]
+  messages    Message[]
+}
+
+model CollectionMember {
+  id             Int        @id @default(autoincrement())
+  collectionId   Int
+  userId         Int
+  canAddFeeds    Boolean    @default(false)
+  canModifyFeeds Boolean    @default(false)
+  canDeleteFeeds Boolean    @default(false)
+  canComment     Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  collection     Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, userId])
+}
+
+model Feed {
+  id              Int            @id @default(autoincrement())
+  title           String
+  url             String
+  description     String?
+  updateFrequency String         @default("daily")
+  isActive        Boolean        @default(true)
+  collectionId    Int
+  creatorId       Int
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  articles        Article[]
+  collection      Collection     @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  creator         User           @relation(fields: [creatorId], references: [id])
+  categories      FeedCategory[]
+}
+
+model FeedCategory {
+  id     Int    @id @default(autoincrement())
+  name   String
+  feedId Int
+  feed   Feed   @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@unique([feedId, name])
+}
+
+model Article {
+  id               Int              @id @default(autoincrement())
+  title            String
+  link             String
+  guid             String?
+  pubDate          DateTime
+  author           String?
+  content          String?
+  summary          String?
+  feedId           Int
+  createdAt        DateTime         @default(now())
+  feed             Feed             @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  comments         Comment[]
+  favoriteStatuses FavoriteStatus[]
+  readStatuses     ReadStatus[]
+
+  @@unique([feedId, guid])
+}
+
+model ReadStatus {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  articleId Int
+  readAt    DateTime @default(now())
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+}
+
+model FavoriteStatus {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  articleId   Int
+  favoritedAt DateTime @default(now())
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+}
+
+model Message {
+  id           Int        @id @default(autoincrement())
+  content      String
+  collectionId Int
+  userId       Int
+  createdAt    DateTime   @default(now())
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  articleId Int
+  userId    Int
+  createdAt DateTime @default(now())
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+}
