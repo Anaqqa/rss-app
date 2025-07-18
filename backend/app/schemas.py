@@ -58,3 +58,101 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+    
+    
+# ===== COLLECTION SCHEMAS =====
+class CollectionBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    is_shared: bool = False
+
+class CollectionCreate(CollectionBase):
+    pass
+
+class CollectionUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+
+class CollectionResponse(CollectionBase):
+    id: int
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class CollectionWithStats(CollectionResponse):
+    feeds_count: int = 0
+    articles_count: int = 0
+    unread_count: int = 0
+    
+# ===== RSS FEED SCHEMAS =====
+class RSSFeedBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    url: str = Field(..., pattern=r'^https?://.+')  # Changé: regex -> pattern
+    description: Optional[str] = None
+    site_url: Optional[str] = Field(None, pattern=r'^https?://.+')  # Changé: regex -> pattern
+    update_frequency: int = Field(default=60, ge=15, le=1440)  # Entre 15 min et 24h
+    is_active: bool = True
+
+class RSSFeedCreate(RSSFeedBase):
+    collection_id: int
+
+class RSSFeedUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = None
+    update_frequency: Optional[int] = Field(None, ge=15, le=1440)
+    is_active: Optional[bool] = None
+
+class RSSFeedResponse(RSSFeedBase):
+    id: int
+    collection_id: int
+    last_updated: Optional[datetime] = None
+    last_fetch_status: str = "pending"
+    error_message: Optional[str] = None
+    added_by_user_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True    
+        
+# ===== ARTICLE SCHEMAS =====
+class ArticleBase(BaseModel):
+    title: str = Field(..., max_length=300)
+    link: str
+    description: Optional[str] = None
+    content: Optional[str] = None
+    author: Optional[str] = Field(None, max_length=100)
+    published_date: Optional[datetime] = None
+
+class ArticleResponse(ArticleBase):
+    id: int
+    feed_id: int
+    guid: Optional[str] = None
+    fetched_at: datetime
+    
+    # États pour l'utilisateur connecté
+    is_read: Optional[bool] = None
+    is_favorite: Optional[bool] = None
+    
+    class Config:
+        from_attributes = True
+
+# ===== USER ARTICLE SCHEMAS =====
+class UserArticleUpdate(BaseModel):
+    is_read: Optional[bool] = None
+    is_favorite: Optional[bool] = None
+
+class UserArticleResponse(BaseModel):
+    id: int
+    user_id: int
+    article_id: int
+    is_read: bool
+    is_favorite: bool
+    read_at: Optional[datetime] = None
+    favorited_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True

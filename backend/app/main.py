@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routers import auth
+from .routers import auth, collections, feeds, articles
+
 
 # Créer les tables
 Base.metadata.create_all(bind=engine)
@@ -23,8 +24,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inclure les routes
+# Importer et inclure les routes APRÈS la création de l'app
+from .routers import auth, collections
+
 app.include_router(auth.router)
+app.include_router(collections.router)
+app.include_router(feeds.router)
+app.include_router(articles.router)
 
 # Route de test
 @app.get("/")
