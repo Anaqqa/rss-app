@@ -1,103 +1,57 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
   # Base de données PostgreSQL
-  postgres:
-    image: postgres:15-alpine
-    container_name: rss-postgres
+  database:
+    image: postgres:15
+    container_name: rss_db
     environment:
-      POSTGRES_DB: rss_app
+      POSTGRES_DB: rss_database
       POSTGRES_USER: rss_user
-      POSTGRES_PASSWORD: rss_password_2025
+      POSTGRES_PASSWORD: rss_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rss_user -d rss_app"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - rss-network
+      test: ["CMD-SHELL", "pg_isready -U rss_user -d rss_database"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Cache Redis
-  redis:
-    image: redis:7-alpine
-    container_name: rss-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - rss-network
-
-  # Backend API
+  # Backend FastAPI
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: rss-backend
+    container_name: rss_backend
     environment:
-      NODE_ENV: development
-      PORT: 5000
-      DATABASE_URL: postgresql://rss_user:rss_password_2025@postgres:5432/rss_app?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production-2025
-      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production-2025
-      GOOGLE_CLIENT_ID: your-google-client-id
-      GOOGLE_CLIENT_SECRET: your-google-client-secret
-      GITHUB_CLIENT_ID: your-github-client-id
-      GITHUB_CLIENT_SECRET: your-github-client-secret
-      FRONTEND_URL: http://localhost:3000
-      BACKEND_URL: http://localhost:5000
+      DATABASE_URL: postgresql://rss_user:rss_password@database:5432/rss_database
+      SECRET_KEY: your-secret-key-change-this-in-production
     ports:
-      - "5000:5000"
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
     volumes:
       - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - rss-network
-    command: npm run dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   # Frontend React
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: rss-frontend
-    environment:
-      REACT_APP_API_URL: http://localhost:5000/api
-      REACT_APP_SOCKET_URL: http://localhost:5000
-      REACT_APP_GOOGLE_CLIENT_ID: your-google-client-id
+    container_name: rss_frontend
     ports:
       - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
       - backend
-    networks:
-      - rss-network
-    command: npm start
 
 volumes:
   postgres_data:
-  redis_data:
-
-networks:
-  rss-network:
-    driver: bridge
