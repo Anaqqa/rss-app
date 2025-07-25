@@ -8,6 +8,7 @@ import Profile from './components/Profile/Profile';
 import Navbar from './components/Layout/Navbar';
 import Collections from './components/Collections/Collections';
 import CollectionDetail from './components/Collections/CollectionDetail';
+import ExportImport from './components/ExportImport/ExportImport';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Composant pour protéger les routes
@@ -82,6 +83,11 @@ function AppContent() {
         <Route path="/collections/:id" element={
           <ProtectedRoute> 
             <CollectionDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="/export-import" element={
+          <ProtectedRoute>
+            <ExportImport />
           </ProtectedRoute>
         } />
         

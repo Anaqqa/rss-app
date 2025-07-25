@@ -182,4 +182,134 @@ export const articlesService = {
   }
 };
 
+// Export functions
+export const exportFeeds = {
+  // Export OPML
+  async opml(collectionIds = null) {
+    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
+    const response = await fetch(`${API_BASE_URL}/export/opml${params}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'export OPML');
+    }
+    
+    // Récupérer le blob pour téléchargement
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rss_feeds.opml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+
+  // Export JSON
+  async json(collectionIds = null) {
+    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
+    const response = await fetch(`${API_BASE_URL}/export/json${params}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'export JSON');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rss_feeds.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+
+  // Export CSV
+  async csv(collectionIds = null) {
+    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
+    const response = await fetch(`${API_BASE_URL}/export/csv${params}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'export CSV');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rss_feeds.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+};
+
+// Import functions
+export const importFeeds = {
+  // Import OPML
+  async opml(file, collectionId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (collectionId) {
+      formData.append('collection_id', collectionId);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/export/import/opml`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Erreur lors de l\'import OPML');
+    }
+
+    return await response.json();
+  },
+
+  // Import JSON
+  async json(file, collectionId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (collectionId) {
+      formData.append('collection_id', collectionId);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/export/import/json`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Erreur lors de l\'import JSON');
+    }
+
+    return await response.json();
+  }
+};
+
 export default api;

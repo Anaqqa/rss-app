@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from . import models
-from .routers import auth, collections, feeds, articles
+from .routers import auth, collections, feeds, articles, export
 
 
 # Créer les tables
@@ -31,6 +31,7 @@ app.include_router(auth.router)
 app.include_router(collections.router)
 app.include_router(feeds.router)
 app.include_router(articles.router)
+app.include_router(export.router)
 
 # Route de test
 @app.get("/")

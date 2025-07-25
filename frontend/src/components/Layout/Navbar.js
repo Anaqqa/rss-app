@@ -50,6 +50,11 @@ const Navbar = () => {
                 📡 Flux RSS
               </Link>
             </li>
+            <li className="nav-item">
+              <Link className={`nav-link ${isActive('/export-import')}`} to="/export-import">
+                📤 Export/Import
+              </Link>
+            </li>
           </ul>
 
           <div className="navbar-nav">
