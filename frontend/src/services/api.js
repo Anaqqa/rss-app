@@ -149,23 +149,38 @@ export const feedsService = {
   // Supprimer un flux RSS
   delete: async (id) => {
     await api.delete(`/feeds/${id}`);
-  }
+  },
+  
+  async updateFeed(id) {
+    const response = await api.post(`/feeds/${id}/update`);
+    return response.data;
+  }  
 };
 
 // Services pour les articles
 export const articlesService = {
-  // Obtenir les articles d'une collection
-  getByCollection: async (collectionId, params = {}) => {
-    const queryParams = new URLSearchParams();
+  // NOUVEAU: Méthode améliorée avec tous les filtres
+  async getByCollection(collectionId, filters = {}) {
+    const params = new URLSearchParams();
     
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        queryParams.append(key, value);
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params.append(key, value);
       }
     });
-    
-    const url = `/articles/collection/${collectionId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-    const response = await api.get(url);
+
+    const response = await api.get(`/articles/collection/${collectionId}?${params}`);
+    return response.data;
+  },
+
+  //Recherche globale
+  async searchGlobal(searchTerm, filters = {}) {
+    const params = new URLSearchParams({
+      search: searchTerm,
+      ...filters
+    });
+
+    const response = await api.get(`/articles/search?${params}`);
     return response.data;
   },
 
@@ -175,140 +190,78 @@ export const articlesService = {
     return response.data;
   },
 
+  // Méthodes helper pour lu/favori
+  async markAsRead(articleId, isRead = true) {
+    return this.updateStatus(articleId, { is_read: isRead });
+  },
+
+  async toggleFavorite(articleId, isFavorite) {
+    return this.updateStatus(articleId, { is_favorite: isFavorite });
+  },
+
   // Actualiser un flux RSS
-  refreshFeed: async (feedId) => {
-    const response = await api.post(`/articles/refresh-feed/${feedId}`);
+  async updateFeed(feedId) { // au lieu de refreshFeed
+    const response = await api.post(`/feeds/${feedId}/update`);
     return response.data;
   }
 };
 
-// Export functions
-export const exportFeeds = {
-  // Export OPML
-  async opml(collectionIds = null) {
-    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
-    const response = await fetch(`${API_BASE_URL}/export/opml${params}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${getToken()}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Erreur lors de l\'export OPML');
-    }
-    
-    // Récupérer le blob pour téléchargement
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'rss_feeds.opml';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+// 2.Ajouter après articlesService :
+export const statsService = {
+  async getDashboardStats() {
+    const response = await api.get('/stats/dashboard');
+    return response.data;
   },
 
-  // Export JSON
-  async json(collectionIds = null) {
-    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
-    const response = await fetch(`${API_BASE_URL}/export/json${params}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${getToken()}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Erreur lors de l\'export JSON');
-    }
-    
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'rss_feeds.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  },
-
-  // Export CSV
-  async csv(collectionIds = null) {
-    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
-    const response = await fetch(`${API_BASE_URL}/export/csv${params}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${getToken()}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Erreur lors de l\'export CSV');
-    }
-    
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'rss_feeds.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+  async getCollectionStats(collectionId) {
+    const response = await api.get(`/stats/collection/${collectionId}`);
+    return response.data;
   }
 };
 
-// Import functions
-export const importFeeds = {
-  // Import OPML
-  async opml(file, collectionId = null) {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (collectionId) {
-      formData.append('collection_id', collectionId);
-    }
-
-    const response = await fetch(`${API_BASE_URL}/export/import/opml`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${getToken()}`
-      },
-      body: formData
+export const exportImportService = {
+  async exportOPML(collectionIds = null) {
+    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
+    const response = await api.get(`/export/opml${params}`, {
+      responseType: 'blob'
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Erreur lors de l\'import OPML');
-    }
-
-    return await response.json();
+    return response.data;
   },
 
-  // Import JSON
-  async json(file, collectionId = null) {
+  async exportJSON(collectionIds = null) {
+    const params = collectionIds ? `?collection_ids=${collectionIds.join(',')}` : '';
+    const response = await api.get(`/export/json${params}`);
+    return response.data;
+  },
+
+  async importOPML(file, collectionId = null) {
     const formData = new FormData();
     formData.append('file', file);
     if (collectionId) {
       formData.append('collection_id', collectionId);
     }
 
-    const response = await fetch(`${API_BASE_URL}/export/import/json`, {
-      method: 'POST',
+    const response = await api.post('/import/opml', formData, {
       headers: {
-        'Authorization': `Bearer ${getToken()}`
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData
     });
+    return response.data;
+  },
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Erreur lors de l\'import JSON');
+  async importJSON(file, collectionId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (collectionId) {
+      formData.append('collection_id', collectionId);
     }
 
-    return await response.json();
+    const response = await api.post('/import/json', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   }
 };
 
