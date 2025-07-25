@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+// frontend/src/components/Auth/Login.js - Version complète avec OAuth2
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import GoogleOAuth from './GoogleOAuth';
+import { oauthService } from '../../services/oauth';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,9 +12,25 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [oauthAvailable, setOauthAvailable] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Vérifier si OAuth est disponible au chargement
+  useEffect(() => {
+    const checkOAuth = async () => {
+      try {
+        const available = await oauthService.checkOAuthAvailability();
+        setOauthAvailable(available);
+      } catch (error) {
+        console.log('OAuth non disponible:', error);
+        setOauthAvailable(false);
+      }
+    };
+    
+    checkOAuth();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -39,17 +58,19 @@ const Login = () => {
     }
   };
 
+  const handleOAuthError = (errorMessage) => {
+    setError(errorMessage);
+  };
+
   return (
-    <div className="min-vh-100 d-flex align-items-center bg-light">
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-6 col-lg-4">
             <div className="card shadow">
               <div className="card-body p-4">
                 <div className="text-center mb-4">
-                  <h2 className="card-title text-primary">
-                    📰 RSS Aggregator
-                  </h2>
+                  <h2 className="h4 mb-1">📰 RSS Aggregator</h2>
                   <p className="text-muted">Connectez-vous à votre compte</p>
                 </div>
 
@@ -59,6 +80,23 @@ const Login = () => {
                   </div>
                 )}
 
+                {/* OAuth Google - Affiché seulement si disponible */}
+                {oauthAvailable && (
+                  <div className="mb-4">
+                    <GoogleOAuth 
+                      onError={handleOAuthError}
+                    />
+                    
+                    <div className="position-relative my-4">
+                      <hr />
+                      <span className="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">
+                        ou
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Formulaire de connexion classique */}
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
                     <label htmlFor="username" className="form-label">
@@ -73,6 +111,7 @@ const Login = () => {
                       onChange={handleChange}
                       required
                       disabled={loading}
+                      placeholder="Entrez votre nom d'utilisateur"
                     />
                   </div>
 
@@ -89,12 +128,13 @@ const Login = () => {
                       onChange={handleChange}
                       required
                       disabled={loading}
+                      placeholder="Entrez votre mot de passe"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="btn btn-primary w-100 mb-3"
+                    className="btn btn-primary w-100"
                     disabled={loading}
                   >
                     {loading ? (
@@ -108,7 +148,7 @@ const Login = () => {
                   </button>
                 </form>
 
-                <div className="text-center">
+                <div className="text-center mt-4">
                   <p className="mb-0">
                     Pas de compte ?{' '}
                     <Link to="/register" className="text-primary text-decoration-none">
@@ -116,6 +156,15 @@ const Login = () => {
                     </Link>
                   </p>
                 </div>
+
+                {/* Information sur OAuth si non disponible */}
+                {!oauthAvailable && (
+                  <div className="mt-3">
+                    <small className="text-muted d-block text-center">
+                      💡 La connexion Google sera disponible une fois configurée
+                    </small>
+                  </div>
+                )}
               </div>
             </div>
           </div>

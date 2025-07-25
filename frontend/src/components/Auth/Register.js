@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+// frontend/src/components/Auth/Register.js - Version complète avec OAuth2
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import GoogleOAuth from './GoogleOAuth';
+import { oauthService } from '../../services/oauth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -14,9 +17,25 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [oauthAvailable, setOauthAvailable] = useState(false);
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Vérifier si OAuth est disponible au chargement
+  useEffect(() => {
+    const checkOAuth = async () => {
+      try {
+        const available = await oauthService.checkOAuthAvailability();
+        setOauthAvailable(available);
+      } catch (error) {
+        console.log('OAuth non disponible:', error);
+        setOauthAvailable(false);
+      }
+    };
+    
+    checkOAuth();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -64,18 +83,20 @@ const Register = () => {
     }
   };
 
+  const handleOAuthError = (errorMessage) => {
+    setError(errorMessage);
+  };
+
   return (
-    <div className="min-vh-100 d-flex align-items-center bg-light">
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-4">
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-8 col-lg-6">
             <div className="card shadow">
               <div className="card-body p-4">
                 <div className="text-center mb-4">
-                  <h2 className="card-title text-primary">
-                    📰 RSS Aggregator
-                  </h2>
-                  <p className="text-muted">Créez votre compte</p>
+                  <h2 className="h4 mb-1">📰 Créer un compte</h2>
+                  <p className="text-muted">Rejoignez RSS Aggregator</p>
                 </div>
 
                 {error && (
@@ -90,6 +111,23 @@ const Register = () => {
                   </div>
                 )}
 
+                {/* OAuth Google - Affiché seulement si disponible */}
+                {oauthAvailable && (
+                  <div className="mb-4">
+                    <GoogleOAuth 
+                      onError={handleOAuthError}
+                    />
+                    
+                    <div className="position-relative my-4">
+                      <hr />
+                      <span className="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">
+                        ou créez un compte manuel
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Formulaire d'inscription */}
                 <form onSubmit={handleSubmit}>
                   <div className="row">
                     <div className="col-md-6 mb-3">
@@ -104,6 +142,7 @@ const Register = () => {
                         value={formData.first_name}
                         onChange={handleChange}
                         disabled={loading}
+                        placeholder="Votre prénom"
                       />
                     </div>
                     <div className="col-md-6 mb-3">
@@ -118,6 +157,7 @@ const Register = () => {
                         value={formData.last_name}
                         onChange={handleChange}
                         disabled={loading}
+                        placeholder="Votre nom"
                       />
                     </div>
                   </div>
@@ -135,6 +175,7 @@ const Register = () => {
                       onChange={handleChange}
                       required
                       disabled={loading}
+                      placeholder="Choisissez un nom d'utilisateur"
                     />
                   </div>
 
@@ -151,54 +192,58 @@ const Register = () => {
                       onChange={handleChange}
                       required
                       disabled={loading}
+                      placeholder="votre.email@exemple.com"
                     />
                   </div>
 
-                  <div className="mb-3">
-                    <label htmlFor="password" className="form-label">
-                      Mot de passe *
-                    </label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                      minLength={8}
-                    />
-                    <div className="form-text">
-                      Au moins 8 caractères
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="password" className="form-label">
+                        Mot de passe *
+                      </label>
+                      <input
+                        type="password"
+                        className="form-control"
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        disabled={loading}
+                        minLength={8}
+                        placeholder="Au moins 8 caractères"
+                      />
+                      <div className="form-text">
+                        Au moins 8 caractères
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label htmlFor="confirmPassword" className="form-label">
-                      Confirmer le mot de passe *
-                    </label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="confirmPassword" className="form-label">
+                        Confirmer le mot de passe *
+                      </label>
+                      <input
+                        type="password"
+                        className="form-control"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required
+                        disabled={loading}
+                        placeholder="Répétez votre mot de passe"
+                      />
+                    </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="btn btn-primary w-100 mb-3"
+                    className="btn btn-primary w-100"
                     disabled={loading}
                   >
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Création du compte...
+                        Création...
                       </>
                     ) : (
                       'Créer mon compte'
@@ -206,7 +251,7 @@ const Register = () => {
                   </button>
                 </form>
 
-                <div className="text-center">
+                <div className="text-center mt-4">
                   <p className="mb-0">
                     Déjà un compte ?{' '}
                     <Link to="/login" className="text-primary text-decoration-none">
@@ -214,6 +259,15 @@ const Register = () => {
                     </Link>
                   </p>
                 </div>
+
+                {/* Information sur OAuth si non disponible */}
+                {!oauthAvailable && (
+                  <div className="mt-3">
+                    <small className="text-muted d-block text-center">
+                      💡 La connexion Google sera disponible une fois configurée
+                    </small>
+                  </div>
+                )}
               </div>
             </div>
           </div>

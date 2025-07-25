@@ -22,7 +22,7 @@ class User(Base):
     last_name = Column(String(50))
     is_active = Column(Boolean, default=True)
     
-    # OAuth2 fields (optionnel)
+    # OAuth2 fields 
     oauth_provider = Column(String(20))
     oauth_id = Column(String(100))
     

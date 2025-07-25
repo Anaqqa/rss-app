@@ -1,0 +1,6 @@
+
+# Variables d'environnement
+.env
+backend/.env
+frontend/.env
+*.env

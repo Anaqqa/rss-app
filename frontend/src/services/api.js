@@ -266,3 +266,6 @@ export const exportImportService = {
 };
 
 export default api;
+
+import { oauthService } from './oauth';
+export { oauthService };

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import OAuthCallback from './components/Auth/OAuthCallback';
 import Dashboard from './components/Dashboard/Dashboard';
 import Profile from './components/Profile/Profile';
 import Navbar from './components/Layout/Navbar';
@@ -63,6 +64,9 @@ function AppContent() {
             <Register />
           </PublicRoute>
         } />
+        
+        {/* Route OAuth callback - accessible même non connecté */}
+        <Route path="/auth/callback" element={<OAuthCallback />} />
         
         {/* Routes protégées */}
         <Route path="/dashboard" element={
