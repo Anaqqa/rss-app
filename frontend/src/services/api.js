@@ -206,7 +206,6 @@ export const articlesService = {
   }
 };
 
-// 2.Ajouter après articlesService :
 export const statsService = {
   async getDashboardStats() {
     const response = await api.get('/stats/dashboard');
@@ -261,6 +260,67 @@ export const exportImportService = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  }
+};
+
+
+// Services pour la messagerie instantanée
+export const messageService = {
+  // Obtenir les messages d'une collection
+  async getCollectionMessages(collectionId, limit = 50, offset = 0) {
+    const response = await api.get(`/messages/collection/${collectionId}?limit=${limit}&offset=${offset}`);
+    return response.data;
+  },
+
+  // Créer un nouveau message
+  async createMessage(messageData) {
+    const response = await api.post('/messages/', messageData);
+    return response.data;
+  },
+
+  // Modifier un message
+  async updateMessage(messageId, content) {
+    const response = await api.put(`/messages/${messageId}`, { content });
+    return response.data;
+  },
+
+  // Supprimer un message
+  async deleteMessage(messageId) {
+    const response = await api.delete(`/messages/${messageId}`);
+    return response.data;
+  }
+};
+
+// Services pour les commentaires
+export const commentService = {
+  // Obtenir les commentaires d'un article
+  async getArticleComments(articleId, limit = 20, offset = 0) {
+    const response = await api.get(`/comments/article/${articleId}?limit=${limit}&offset=${offset}`);
+    return response.data;
+  },
+
+  // Obtenir tous les commentaires d'une collection (modération)
+  async getCollectionComments(collectionId, limit = 50, offset = 0) {
+    const response = await api.get(`/comments/collection/${collectionId}?limit=${limit}&offset=${offset}`);
+    return response.data;
+  },
+
+  // Créer un nouveau commentaire
+  async createComment(commentData) {
+    const response = await api.post('/comments/', commentData);
+    return response.data;
+  },
+
+  // Modifier un commentaire
+  async updateComment(commentId, content) {
+    const response = await api.put(`/comments/${commentId}`, { content });
+    return response.data;
+  },
+
+  // Supprimer un commentaire
+  async deleteComment(commentId) {
+    const response = await api.delete(`/comments/${commentId}`);
     return response.data;
   }
 };

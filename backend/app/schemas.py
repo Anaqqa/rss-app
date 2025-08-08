@@ -156,3 +156,88 @@ class UserArticleResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        
+
+# ===== MESSAGE SCHEMAS =====
+class MessageBase(BaseModel):
+    content: str = Field(..., min_length=1, max_length=1000)
+
+class MessageCreate(MessageBase):
+    collection_id: int
+
+class MessageUpdate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=1000)
+
+class MessageResponse(MessageBase):
+    id: int
+    collection_id: int
+    user_id: int
+    created_at: datetime
+    
+    # Informations utilisateur pour l'affichage
+    user: UserResponse
+    
+    class Config:
+        from_attributes = True
+
+# ===== COMMENT SCHEMAS =====
+class CommentBase(BaseModel):
+    content: str = Field(..., min_length=1, max_length=2000)
+
+class CommentCreate(CommentBase):
+    article_id: int
+    collection_id: int
+
+class CommentUpdate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=2000)
+
+class CommentResponse(CommentBase):
+    id: int
+    article_id: int
+    user_id: int
+    collection_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    # Informations utilisateur pour l'affichage
+    user: UserResponse
+    
+    class Config:
+        from_attributes = True
+
+# ===== USER SIMPLE SCHEMA (pour éviter la récursion) =====
+class UserSimple(BaseModel):
+    id: int
+    username: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+# Redéfinir les schemas de message et commentaire avec UserSimple
+class MessageResponse(MessageBase):
+    id: int
+    collection_id: int
+    user_id: int
+    created_at: datetime
+    
+    # Informations utilisateur pour l'affichage
+    user: UserSimple
+    
+    class Config:
+        from_attributes = True
+
+class CommentResponse(CommentBase):
+    id: int
+    article_id: int
+    user_id: int
+    collection_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    # Informations utilisateur pour l'affichage
+    user: UserSimple
+    
+    class Config:
+        from_attributes = True

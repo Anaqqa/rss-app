@@ -81,13 +81,13 @@ def create_feed(
     return db_feed
 
 @router.put("/{feed_id}", response_model=schemas.RSSFeedResponse)
-def update_feed(
+def update_feed_settings(
     feed_id: int,
     feed_update: schemas.RSSFeedUpdate,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Mettre à jour un flux RSS"""
+    """Mettre à jour les paramètres d'un flux RSS"""
     feed = db.query(models.RSSFeed).filter(models.RSSFeed.id == feed_id).first()
     
     if not feed:
@@ -108,13 +108,132 @@ def update_feed(
     
     # Mettre à jour les champs
     for field, value in feed_update.dict(exclude_unset=True).items():
-        if field != "category_ids":  # On gère les catégories séparément
-            setattr(feed, field, value)
+        setattr(feed, field, value)
     
     db.commit()
     db.refresh(feed)
     
     return feed
+
+@router.post("/{feed_id}/update")
+def update_feed_content(
+    feed_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Forcer la mise à jour du contenu d'un flux RSS (récupérer de nouveaux articles)"""
+    
+    # Récupérer le flux
+    feed = db.query(models.RSSFeed).filter(models.RSSFeed.id == feed_id).first()
+    if not feed:
+        raise HTTPException(status_code=404, detail="Flux RSS non trouvé")
+    
+    # Vérifier les permissions
+    collection = db.query(models.Collection).filter(models.Collection.id == feed.collection_id).first()
+    if collection.owner_id != current_user.id and feed.added_by_user_id != current_user.id:
+        user_collection = db.query(models.UserCollection).filter(
+            and_(
+                models.UserCollection.user_id == current_user.id,
+                models.UserCollection.collection_id == feed.collection_id,
+                models.UserCollection.can_edit_feeds == True
+            )
+        ).first()
+        if not user_collection:
+            raise HTTPException(status_code=403, detail="Pas d'autorisation pour mettre à jour ce flux")
+    
+    try:
+        # Importer les modules nécessaires
+        import feedparser
+        import requests
+        from datetime import datetime
+        from sqlalchemy.sql import func
+        
+        # Récupérer le flux RSS
+        response = requests.get(feed.url, timeout=30)
+        response.raise_for_status()
+        
+        # Parser le contenu RSS
+        parsed_feed = feedparser.parse(response.content)
+        
+        if parsed_feed.bozo:
+            raise HTTPException(status_code=400, detail=f"Flux RSS invalide: {parsed_feed.bozo_exception}")
+        
+        # Compter les nouveaux articles
+        new_articles_count = 0
+        
+        # Traiter chaque article du flux
+        for entry in parsed_feed.entries:
+            # Utiliser le GUID ou le lien comme identifiant unique
+            article_guid = getattr(entry, 'id', entry.link)
+            
+            # Vérifier si l'article existe déjà
+            existing_article = db.query(models.Article).filter(
+                and_(
+                    models.Article.feed_id == feed.id,
+                    models.Article.guid == article_guid
+                )
+            ).first()
+            
+            if existing_article:
+                continue  # Article déjà existant
+            
+            # Extraire les informations de l'article
+            title = getattr(entry, 'title', 'Sans titre')
+            link = getattr(entry, 'link', '')
+            description = getattr(entry, 'description', '') or getattr(entry, 'summary', '')
+            author = getattr(entry, 'author', None)
+            
+            # Gérer la date de publication
+            published_date = None
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                try:
+                    published_date = datetime(*entry.published_parsed[:6])
+                except (TypeError, ValueError):
+                    pass
+            
+            # Créer le nouvel article
+            new_article = models.Article(
+                feed_id=feed.id,
+                title=title[:300],  # Limiter à 300 caractères
+                link=link[:500],    # Limiter à 500 caractères
+                description=description,
+                author=author[:100] if author else None,  # Limiter à 100 caractères
+                published_date=published_date,
+                guid=article_guid[:500],  # Limiter à 500 caractères
+                fetched_at=func.now()
+            )
+            
+            db.add(new_article)
+            new_articles_count += 1
+        
+        # Mettre à jour le statut du flux
+        feed.last_updated = func.now()
+        feed.last_fetch_status = 'success'
+        feed.error_message = None
+        
+        db.commit()
+        
+        return {
+            "message": f"Flux mis à jour avec succès",
+            "new_articles_count": new_articles_count,
+            "total_entries": len(parsed_feed.entries),
+            "feed_title": feed.title,
+            "last_updated": datetime.now().isoformat()
+        }
+        
+    except requests.RequestException as e:
+        # Erreur de récupération du flux
+        feed.last_fetch_status = 'error'
+        feed.error_message = f"Erreur de récupération: {str(e)}"
+        db.commit()
+        raise HTTPException(status_code=400, detail=f"Impossible de récupérer le flux: {str(e)}")
+    
+    except Exception as e:
+        # Erreur générale
+        feed.last_fetch_status = 'error' 
+        feed.error_message = f"Erreur de parsing: {str(e)}"
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour: {str(e)}")
 
 @router.delete("/{feed_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_feed(

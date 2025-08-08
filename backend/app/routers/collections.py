@@ -1,3 +1,4 @@
+# backend/app/routers/collections.py - Version complète avec gestion des membres
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -121,3 +122,216 @@ def delete_collection(
     db.commit()
     
     return None
+
+# ==================== NOUVELLES ROUTES POUR LA GESTION DES MEMBRES ====================
+
+@router.get("/{collection_id}/members")
+def get_collection_members(
+    collection_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtenir les membres d'une collection partagée"""
+    
+    # Vérifier l'accès à la collection  
+    collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection non trouvée")
+    
+    # Seul le propriétaire peut voir les membres
+    if collection.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Seul le propriétaire peut voir les membres")
+    
+    # Récupérer les membres
+    members = db.query(models.UserCollection).filter(
+        models.UserCollection.collection_id == collection_id
+    ).all()
+    
+    result = []
+    for member in members:
+        result.append({
+            "id": member.id,
+            "user_id": member.user_id,
+            "user": {
+                "id": member.user.id,
+                "username": member.user.username,
+                "email": member.user.email,
+                "first_name": member.user.first_name,
+                "last_name": member.user.last_name
+            },
+            "permissions": {
+                "can_read": member.can_read,
+                "can_add_feeds": member.can_add_feeds,
+                "can_edit_feeds": member.can_edit_feeds,
+                "can_delete_feeds": member.can_delete_feeds,
+                "can_comment": member.can_comment
+            },
+            "joined_at": member.joined_at.isoformat()
+        })
+    
+    return result
+
+@router.post("/{collection_id}/invite")
+def invite_user_to_collection(
+    collection_id: int,
+    invite_data: dict,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Inviter un utilisateur à rejoindre une collection partagée"""
+    
+    username = invite_data.get("username")
+    permissions = invite_data.get("permissions", {})
+    
+    if not username:
+        raise HTTPException(status_code=400, detail="Nom d'utilisateur requis")
+    
+    # Vérifier la collection
+    collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection non trouvée")
+    
+    # Seul le propriétaire peut inviter
+    if collection.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Seul le propriétaire peut inviter des membres")
+    
+    # Vérifier que la collection est partagée
+    if not collection.is_shared:
+        raise HTTPException(status_code=400, detail="Cette collection n'est pas partagée")
+    
+    # Trouver l'utilisateur à inviter
+    user_to_invite = db.query(models.User).filter(models.User.username == username).first()
+    if not user_to_invite:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Vérifier s'il est déjà membre
+    existing_member = db.query(models.UserCollection).filter(
+        and_(
+            models.UserCollection.user_id == user_to_invite.id,
+            models.UserCollection.collection_id == collection_id
+        )
+    ).first()
+    
+    if existing_member:
+        raise HTTPException(status_code=400, detail="Cet utilisateur est déjà membre de cette collection")
+    
+    # Ne peut pas s'inviter soi-même
+    if user_to_invite.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas vous inviter vous-même")
+    
+    # Créer l'invitation/membership
+    new_member = models.UserCollection(
+        user_id=user_to_invite.id,
+        collection_id=collection_id,
+        can_read=permissions.get("can_read", True),
+        can_add_feeds=permissions.get("can_add_feeds", False),
+        can_edit_feeds=permissions.get("can_edit_feeds", False),
+        can_delete_feeds=permissions.get("can_delete_feeds", False),
+        can_comment=permissions.get("can_comment", True)
+    )
+    
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+    
+    return {
+        "message": f"Utilisateur {username} invité avec succès",
+        "member": {
+            "id": new_member.id,
+            "user_id": new_member.user_id,
+            "username": user_to_invite.username,
+            "permissions": {
+                "can_read": new_member.can_read,
+                "can_add_feeds": new_member.can_add_feeds,
+                "can_edit_feeds": new_member.can_edit_feeds,
+                "can_delete_feeds": new_member.can_delete_feeds,
+                "can_comment": new_member.can_comment
+            }
+        }
+    }
+
+@router.delete("/{collection_id}/members/{member_id}")
+def remove_member_from_collection(
+    collection_id: int,
+    member_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retirer un membre d'une collection partagée"""
+    
+    # Vérifier la collection
+    collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection non trouvée")
+    
+    # Seul le propriétaire peut retirer des membres
+    if collection.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Seul le propriétaire peut retirer des membres")
+    
+    # Trouver le membre
+    member = db.query(models.UserCollection).filter(
+        and_(
+            models.UserCollection.id == member_id,
+            models.UserCollection.collection_id == collection_id
+        )
+    ).first()
+    
+    if not member:
+        raise HTTPException(status_code=404, detail="Membre non trouvé")
+    
+    db.delete(member)
+    db.commit()
+    
+    return {"message": "Membre retiré avec succès"}
+
+@router.put("/{collection_id}/members/{member_id}/permissions")
+def update_member_permissions(
+    collection_id: int,
+    member_id: int,
+    permissions_data: dict,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mettre à jour les permissions d'un membre"""
+    
+    # Vérifier la collection
+    collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection non trouvée")
+    
+    # Seul le propriétaire peut modifier les permissions
+    if collection.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Seul le propriétaire peut modifier les permissions")
+    
+    # Trouver le membre
+    member = db.query(models.UserCollection).filter(
+        and_(
+            models.UserCollection.id == member_id,
+            models.UserCollection.collection_id == collection_id
+        )
+    ).first()
+    
+    if not member:
+        raise HTTPException(status_code=404, detail="Membre non trouvé")
+    
+    # Mettre à jour les permissions
+    permissions = permissions_data.get("permissions", {})
+    member.can_read = permissions.get("can_read", member.can_read)
+    member.can_add_feeds = permissions.get("can_add_feeds", member.can_add_feeds)
+    member.can_edit_feeds = permissions.get("can_edit_feeds", member.can_edit_feeds)
+    member.can_delete_feeds = permissions.get("can_delete_feeds", member.can_delete_feeds)
+    member.can_comment = permissions.get("can_comment", member.can_comment)
+    
+    db.commit()
+    db.refresh(member)
+    
+    return {
+        "message": "Permissions mises à jour",
+        "permissions": {
+            "can_read": member.can_read,
+            "can_add_feeds": member.can_add_feeds,
+            "can_edit_feeds": member.can_edit_feeds,
+            "can_delete_feeds": member.can_delete_feeds,
+            "can_comment": member.can_comment
+        }
+    }
