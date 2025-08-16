@@ -1,15 +1,19 @@
-// frontend/src/components/Dashboard/Dashboard.js - Version avec vraies données
+// frontend/src/components/Dashboard/Dashboard.js - AVEC DERNIERS ARTICLES
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { statsService } from '../../services/api';
+import { collectionsService, articlesService } from '../../services/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [recentArticles, setRecentArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [articles, setArticles] = useState([]);
+  const [stats, setStats] = useState({
+    collections: { total: 0, shared: 0, personal: 0 },
+    feeds: { total: 0, active: 0 },
+    articles: { total: 0, favorites: 0, unread: 0 }
+  });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -18,282 +22,286 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const data = await statsService.getDashboardStats();
-      setStats(data);
-      setRecentArticles(data.recent_articles || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des stats:', error);
-      setError('Erreur lors du chargement du tableau de bord');
-      // Fallback avec des données par défaut
+      setError(null);
+      
+      // Charger les collections
+      const collections = await collectionsService.getAll();
+      
+      const personalCollections = collections.filter(col => !col.is_shared);
+      const sharedCollections = collections.filter(col => col.is_shared);
+      
       setStats({
-        collections: { total: 0, owned: 0, shared: 0 },
-        feeds: { total: 0, active: 0, inactive: 0 },
-        articles: { total: 0, unread: 0, read: 0, favorites: 0 }
+        collections: { 
+          total: collections.length,
+          personal: personalCollections.length,
+          shared: sharedCollections.length
+        },
+        feeds: { total: 0, active: 0 },
+        articles: { total: 0, favorites: 0, unread: 0 }
       });
+
+      // Essayer de charger les articles récents
+      try {
+        let recentArticles = [];
+        
+        // Pour chaque collection, essayer de récupérer les articles
+        for (const collection of collections) {
+          try {
+            const collectionArticles = await articlesService.getByCollection(collection.id, { 
+              limit: 5,
+              offset: 0 
+            });
+            recentArticles = [...recentArticles, ...collectionArticles];
+          } catch (err) {
+            console.log(`Pas d'articles pour la collection ${collection.name}`);
+          }
+        }
+        
+        // Trier par date et prendre les 10 plus récents
+        recentArticles.sort((a, b) => new Date(b.published_date) - new Date(a.published_date));
+        setArticles(recentArticles.slice(0, 10));
+        
+      } catch (err) {
+        console.log('Aucun article trouvé, affichage des collections');
+        setArticles([]);
+      }
+      
+    } catch (err) {
+      console.error('Erreur lors du chargement du dashboard:', err);
+      setError('Impossible de charger les données');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleToggleRead = async (articleId) => {
+    try {
+      await articlesService.toggleRead(articleId);
+      setArticles(prev => 
+        prev.map(article => 
+          article.id === articleId 
+            ? { ...article, is_read: !article.is_read }
+            : article
+        )
+      );
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+    }
+  };
+
+  const handleToggleFavorite = async (articleId) => {
+    try {
+      await articlesService.toggleFavorite(articleId);
+      setArticles(prev => 
+        prev.map(article => 
+          article.id === articleId 
+            ? { ...article, is_favorite: !article.is_favorite }
+            : article
+        )
+      );
+    } catch (error) {
+      console.error('Erreur lors du changement de favoris:', error);
+    }
+  };
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'Date inconnue';
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffHours < 1) return "Il y a quelques minutes";
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    return date.toLocaleDateString('fr-FR');
   };
 
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="d-flex justify-content-center">
-          <div className="spinner-border" role="status">
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <div className="text-center">
+          <div className="spinner-border text-bordeaux mb-3" role="status">
             <span className="visually-hidden">Chargement...</span>
           </div>
+          <p className="text-muted">Chargement des derniers articles...</p>
         </div>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        <h6>❌ Erreur</h6>
+        {error}
+        <button 
+          className="btn btn-sm btn-outline-danger mt-2"
+          onClick={fetchDashboardData}
+        >
+          🔄 Réessayer
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mt-4">
-      {/* En-tête de bienvenue */}
-      <div className="row mb-4">
-        <div className="col">
-          <h1 className="h2 mb-1">
-            👋 Bonjour, {user?.first_name || user?.username} !
-          </h1>
-          <p className="text-muted">Voici un aperçu de votre activité RSS</p>
-        </div>
+    <>
+      {/* En-tête du feed */}
+      <div className="feed-header">
+        <h1 className="feed-title">📰 Derniers Articles</h1>
+        <p className="feed-description">
+          Les dernières actualités de toutes vos collections RSS
+        </p>
       </div>
 
-      {/* Message d'erreur */}
-      {error && (
-        <div className="alert alert-warning alert-dismissible">
-          {error}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setError('')}
-          ></button>
-        </div>
-      )}
-
-      {/* Cartes de statistiques */}
-      <div className="row mb-4">
-        {/* Collections */}
-        <div className="col-md-3 mb-3">
-          <div className="card bg-primary text-white h-100">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h5 className="card-title">Collections</h5>
-                  <h3 className="mb-0">{stats?.collections?.total || 0}</h3>
-                  <small className="opacity-75">
-                    {stats?.collections?.owned || 0} possédées, {stats?.collections?.shared || 0} partagées
-                  </small>
-                </div>
-                <div className="align-self-center">
-                  <i className="fs-1">📚</i>
-                </div>
+      {/* Articles récents */}
+      {articles.length > 0 ? (
+        articles.map(article => (
+          <div key={article.id} className="article-card">
+            <div className="article-content">
+              <div className="article-meta">
+                <span className="source-name">{article.feed?.title || 'Source inconnue'}</span>
+                <span>•</span>
+                <span>{formatDate(article.published_date)}</span>
+                <span>•</span>
+                <span>5 min de lecture</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Flux RSS */}
-        <div className="col-md-3 mb-3">
-          <div className="card bg-info text-white h-100">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h5 className="card-title">Flux RSS</h5>
-                  <h3 className="mb-0">{stats?.feeds?.total || 0}</h3>
-                  <small className="opacity-75">
-                    {stats?.feeds?.active || 0} actifs, {stats?.feeds?.inactive || 0} inactifs
-                  </small>
-                </div>
-                <div className="align-self-center">
-                  <i className="fs-1">📡</i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Articles */}
-        <div className="col-md-3 mb-3">
-          <div className="card bg-success text-white h-100">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h5 className="card-title">Articles</h5>
-                  <h3 className="mb-0">{stats?.articles?.total || 0}</h3>
-                  <small className="opacity-75">
-                    {stats?.articles?.read || 0} lus, {stats?.articles?.favorites || 0} favoris
-                  </small>
-                </div>
-                <div className="align-self-center">
-                  <i className="fs-1">📄</i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Non lus */}
-        <div className="col-md-3 mb-3">
-          <div className="card bg-warning text-white h-100">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h5 className="card-title">Non lus</h5>
-                  <h3 className="mb-0">{stats?.articles?.unread || 0}</h3>
-                  <small className="opacity-75">
-                    Articles à découvrir
-                  </small>
-                </div>
-                <div className="align-self-center">
-                  <i className="fs-1">🔔</i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        {/* Actions rapides */}
-        <div className="col-lg-4 mb-4">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">🚀 Actions rapides</h5>
-            </div>
-            <div className="card-body d-flex flex-column">
-              <div className="d-grid gap-2">
-                <Link to="/collections" className="btn btn-primary">
-                  📚 Voir mes collections
-                </Link>
-                <Link to="/collections" className="btn btn-outline-primary">
-                  ➕ Nouvelle collection
-                </Link>
-                <Link to="/export-import" className="btn btn-outline-info">
-                  📥 Importer des flux
-                </Link>
+              
+              <h2 className="article-title">
+                <a href={article.link} target="_blank" rel="noopener noreferrer">
+                  {article.title}
+                </a>
+              </h2>
+              
+              <p className="article-excerpt">
+                {article.description ? 
+                  (article.description.length > 150 ? 
+                    article.description.substring(0, 150) + '...' : 
+                    article.description
+                  ) : 
+                  'Aucun extrait disponible...'
+                }
+              </p>
+              
+              <div className="article-actions">
                 <button 
-                  className="btn btn-outline-success"
-                  onClick={fetchDashboardData}
+                  className={`action-btn ${article.is_read ? 'active' : ''}`}
+                  onClick={() => handleToggleRead(article.id)}
                 >
-                  🔄 Actualiser les données
+                  👁️ {article.is_read ? 'Lu' : 'Marquer lu'}
+                </button>
+                
+                <button 
+                  className={`action-btn ${article.is_favorite ? 'active' : ''}`}
+                  onClick={() => handleToggleFavorite(article.id)}
+                >
+                  ⭐ {article.is_favorite ? 'Favoris' : 'Ajouter favoris'}
+                </button>
+                
+                <button className="action-btn">
+                  💬 Commenter
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Articles récents */}
-        <div className="col-lg-8 mb-4">
-          <div className="card h-100">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">📰 Articles récents</h5>
-              {recentArticles.length > 0 && (
-                <small className="text-muted">
-                  {recentArticles.length} article(s) récent(s)
-                </small>
-              )}
-            </div>
-            <div className="card-body">
-              {recentArticles.length === 0 ? (
-                <div className="text-center text-muted py-4">
-                  <i className="fs-1">📭</i>
-                  <p className="mt-2">Aucun article récent</p>
-                  <p className="small">Ajoutez des flux RSS pour voir vos articles ici</p>
-                </div>
-              ) : (
-                <div className="list-group list-group-flush">
-                  {recentArticles.map(article => (
-                    <div key={article.id} className="list-group-item border-0 px-0">
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div className="flex-grow-1 me-3">
-                          <h6 className="mb-1">
-                            <a 
-                              href={article.link} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-decoration-none"
-                            >
-                              {article.title}
-                            </a>
-                          </h6>
-                          <small className="text-muted">
-                            📡 {article.feed_title} • {formatDate(article.published_date)}
-                          </small>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {article.is_read && (
-                            <span className="badge bg-success me-1">Lu</span>
-                          )}
-                          {article.is_favorite && (
-                            <span className="badge bg-warning">★</span>
-                          )}
-                          {!article.is_read && (
-                            <span className="badge bg-primary">Nouveau</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {recentArticles.length > 0 && (
-              <div className="card-footer text-center">
-                <small className="text-muted">
-                  <Link to="/collections" className="text-decoration-none">
-                    Voir tous les articles dans vos collections →
-                  </Link>
-                </small>
-              </div>
+            
+            {article.image_url && (
+              <img 
+                src={article.image_url} 
+                alt={article.title}
+                className="article-image"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Conseils pour les nouveaux utilisateurs */}
-      {stats?.collections?.total === 0 && (
-        <div className="row">
-          <div className="col">
-            <div className="card border-primary">
-              <div className="card-header bg-primary text-white">
-                <h5 className="mb-0">🎯 Premiers pas</h5>
+        ))
+      ) : (
+        <>
+          {/* Message si pas d'articles */}
+          <div className="article-card">
+            <div className="article-content">
+              <div className="article-meta">
+                <span className="source-name">Bienvenue</span>
+                <span>•</span>
+                <span>Guide de démarrage</span>
               </div>
-              <div className="card-body">
-                <p className="card-text">
-                  Bienvenue dans votre agrégateur RSS ! Pour commencer :
-                </p>
-                <ol>
-                  <li>
-                    <Link to="/collections" className="text-decoration-none">
-                      Créez votre première collection
-                    </Link> pour organiser vos flux
-                  </li>
-                  <li>Ajoutez des flux RSS de vos sites favoris</li>
-                  <li>Utilisez la recherche pour retrouver facilement vos articles</li>
-                  <li>
-                    <Link to="/export-import" className="text-decoration-none">
-                      Importez vos flux existants
-                    </Link> depuis un fichier OPML
-                  </li>
-                </ol>
+              <h2 className="article-title">
+                Aucun article pour le moment
+              </h2>
+              <p className="article-excerpt">
+                {stats.collections.total === 0 ? 
+                  'Créez votre première collection et ajoutez des flux RSS pour commencer à recevoir des articles.' :
+                  'Vos collections sont créées ! Ajoutez maintenant des flux RSS pour commencer à recevoir des articles.'
+                }
+              </p>
+              <div className="article-actions">
+                {stats.collections.total === 0 ? (
+                  <Link to="/collections" className="action-btn active">📚 Créer une collection</Link>
+                ) : (
+                  <Link to="/collections" className="action-btn active">📡 Ajouter des flux RSS</Link>
+                )}
+                <Link to="/export-import" className="action-btn">📥 Importer des flux</Link>
+                <button className="action-btn" onClick={fetchDashboardData}>🔄 Actualiser</button>
               </div>
             </div>
+            <div className="article-image" style={{ 
+              background: 'linear-gradient(135deg, #722f37 0%, #5a252a 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem',
+              color: 'white'
+            }}>
+              🚀
+            </div>
           </div>
+
+          {/* Stats en tant qu'article */}
+          <div className="article-card">
+            <div className="article-content">
+              <div className="article-meta">
+                <span className="source-name">Statistiques</span>
+                <span>•</span>
+                <span>Votre profil RSS</span>
+              </div>
+              <h2 className="article-title">
+                Votre espace RSS personnel
+              </h2>
+              <p className="article-excerpt">
+                Vous avez {stats.collections.total} collection(s) : {stats.collections.personal} personnelle(s) et {stats.collections.shared} partagée(s). 
+                Commencez par ajouter des flux RSS pour recevoir des articles.
+              </p>
+              <div className="article-actions">
+                <span className="action-btn">📚 {stats.collections.total} Collections</span>
+                <span className="action-btn">📡 {stats.feeds.total} Flux RSS</span>
+                <span className="action-btn">📄 {stats.articles.total} Articles</span>
+              </div>
+            </div>
+            <div className="article-image" style={{ 
+              background: 'linear-gradient(135deg, #1a7f37 0%, #155d27 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem',
+              color: 'white'
+            }}>
+              📊
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Bouton pour charger plus d'articles */}
+      {articles.length > 0 && (
+        <div className="text-center mt-4">
+          <button 
+            className="btn btn-outline-primary"
+            onClick={fetchDashboardData}
+          >
+            🔄 Actualiser les articles
+          </button>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

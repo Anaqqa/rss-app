@@ -1,0 +1,95 @@
+/* frontend/src/styles/variables.css */
+:root {
+  /* Couleurs principales */
+  --primary-bordeaux: #722f37;
+  --primary-green: #1a7f37;
+  --primary-blue: #0d6efd;
+  
+  /* Couleurs de texte */
+  --text-primary: #242424;
+  --text-secondary: #6b6b6b;
+  --text-muted: #8e8e8e;
+  --text-light: #ffffff;
+  
+  /* Couleurs de fond */
+  --background: #ffffff;
+  --background-light: #fafafa;
+  --background-dark: #1a1a1a;
+  --hover-bg: #f8f9fa;
+  --active-bg: #f5eded;
+  
+  /* Bordures et ombres */
+  --border-light: #e6e6e6;
+  --border-medium: #d0d0d0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 1px 4px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
+  
+  /* Typographie */
+  --font-main: 'Georgia', 'Times New Roman', serif;
+  --font-ui: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  
+  /* Tailles de police */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 18px;
+  --font-xl: 20px;
+  --font-2xl: 24px;
+  --font-3xl: 32px;
+  
+  /* Espacements */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* Rayons de bordure */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  
+  /* Largeurs */
+  --sidebar-width: 240px;
+  --sidebar-right-width: 300px;
+  --content-max-width: 1200px;
+  
+  /* Z-index */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal: 1040;
+  --z-popover: 1050;
+  --z-tooltip: 1060;
+}
+
+/* Variables pour le mode sombre */
+[data-theme="dark"] {
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #8e8e8e;
+  --background: #1a1a1a;
+  --background-light: #2d2d2d;
+  --hover-bg: #333333;
+  --active-bg: #3d2b2d;
+  --border-light: #404040;
+  --border-medium: #555555;
+}
+
+/* Utilitaires pour les variables */
+.text-bordeaux { color: var(--primary-bordeaux); }
+.bg-bordeaux { background-color: var(--primary-bordeaux); }
+.border-bordeaux { border-color: var(--primary-bordeaux); }
+
+.font-main { font-family: var(--font-main); }
+.font-ui { font-family: var(--font-ui); }
+.font-mono { font-family: var(--font-mono); }

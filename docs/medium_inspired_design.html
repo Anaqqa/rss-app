@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUPRSS - Interface inspirée Medium</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #1a7f37;
+            --text-primary: #242424;
+            --text-secondary: #6b6b6b;
+            --background: #ffffff;
+            --border-light: #e6e6e6;
+            --hover-bg: #f8f9fa;
+            --shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--background);
+        }
+
+        /* Header style Medium */
+        .header {
+            background: var(--background);
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary-green);
+            text-decoration: none;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Layout principal */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 240px 1fr 300px;
+            gap: 48px;
+            padding: 48px 24px;
+        }
+
+        /* Sidebar collections */
+        .sidebar {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .collection-item {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .collection-item:hover,
+        .collection-item.active {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .collection-item.active {
+            background: #e8f5e8;
+            color: var(--primary-green);
+            font-weight: 500;
+        }
+
+        /* Feed principal */
+        .feed-main {
+            min-height: 80vh;
+        }
+
+        .feed-header {
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .feed-title {
+            font-size: 32px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .feed-description {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* Article cards style Medium */
+        .article-card {
+            display: flex;
+            gap: 24px;
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border-light);
+            transition: all 0.2s;
+        }
+
+        .article-card:hover {
+            background: var(--hover-bg);
+            margin: 0 -16px;
+            padding: 24px 16px;
+            border-radius: 8px;
+        }
+
+        .article-content {
+            flex: 1;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .source-name {
+            color: var(--primary-green);
+            font-weight: 500;
+        }
+
+        .article-title {
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .article-title a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .article-title a:hover {
+            color: var(--primary-green);
+        }
+
+        .article-excerpt {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .article-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .action-btn.active {
+            color: var(--primary-green);
+        }
+
+        .article-image {
+            width: 120px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        /* Sidebar droite */
+        .sidebar-right {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        .widget {
+            background: var(--hover-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .widget h4 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* Tags/stats */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 200px 1fr;
+                gap: 32px;
+            }
+            
+            .sidebar-right {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 24px;
+                padding: 24px 16px;
+            }
+            
+            .sidebar {
+                position: static;
+                order: 2;
+            }
+            
+            .article-card {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .article-image {
+                width: 100%;
+                height: 160px;
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="#" class="logo">SUPRSS</a>
+            <nav class="header-nav">
+                <a href="#" class="nav-link">Dashboard</a>
+                <a href="#" class="nav-link">Collections</a>
+                <a href="#" class="nav-link">Paramètres</a>
+                <div class="user-avatar">JD</div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Layout principal -->
+    <div class="main-container">
+        <!-- Sidebar collections -->
+        <aside class="sidebar">
+            <h3>Mes Collections</h3>
+            <a href="#" class="collection-item active">📰 Actualités Tech</a>
+            <a href="#" class="collection-item">🔬 Sciences</a>
+            <a href="#" class="collection-item">💼 Business</a>
+            <a href="#" class="collection-item">🎨 Design</a>
+            <a href="#" class="collection-item">🚀 Startups</a>
+            
+            <h3 style="margin-top: 32px;">Collections Partagées</h3>
+            <a href="#" class="collection-item">👥 Équipe Dev</a>
+            <a href="#" class="collection-item">📊 Marketing</a>
+        </aside>
+
+        <!-- Feed principal -->
+        <main class="feed-main">
+            <div class="feed-header">
+                <h1 class="feed-title">Actualités Tech</h1>
+                <p class="feed-description">Les dernières nouvelles du monde technologique</p>
+            </div>
+
+            <!-- Articles -->
+            <article class="article-card">
+                <div class="article-content">
+                    <div class="article-meta">
+                        <span class="source-name">TechCrunch</span>
+                        <span>•</span>
+                        <span>Il y a 2h</span>
+                        <span>•</span>
+                        <span>5 min de lecture</span>
+                    </div>
+                    <h2 class="article-title">
+                        <a href="#">L'intelligence artificielle révolutionne le développement logiciel</a>
+                    </h2>
+                    <p class="article-excerpt">
+                        Une nouvelle génération d'outils d'IA permet aux développeurs de créer des applications plus rapidement et efficacement. Découvrez comment GitHub Copilot et ChatGPT transforment l'industrie...
+                    </p>
+                    <div class="article-actions">
+                        <button class="action-btn">👁️ Marquer lu</button>
+                        <button class="action-btn active">⭐ Favoris</button>
+                        <button class="action-btn">💬 2 commentaires</button>
+                    </div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop" alt="AI" class="article-image">
+            </article>
+
+            <article class="article-card">
+                <div class="article-content">
+                    <div class="article-meta">
+                        <span class="source-name">Le Monde Tech</span>
+                        <span>•</span>
+                        <span>Il y a 4h</span>
+                        <span>•</span>
+                        <span>3 min de lecture</span>
+                    </div>
+                    <h2 class="article-title">
+                        <a href="#">Les nouvelles tendances du web design en 2024</a>
+                    </h2>
+                    <p class="article-excerpt">
+                        Minimalisme, dark mode et interactions micro-animées dominent les tendances design cette année. Les designers privilégient l'accessibilité et la performance...
+                    </p>
+                    <div class="article-actions">
+                        <button class="action-btn active">👁️ Lu</button>
+                        <button class="action-btn">⭐ Favoris</button>
+                        <button class="action-btn">💬 Commenter</button>
+                    </div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1559028006-448665bd7c7f?w=400&h=300&fit=crop" alt="Design" class="article-image">
+            </article>
+
+            <article class="article-card">
+                <div class="article-content">
+                    <div class="article-meta">
+                        <span class="source-name">Wired</span>
+                        <span>•</span>
+                        <span>Il y a 6h</span>
+                        <span>•</span>
+                        <span>8 min de lecture</span>
+                    </div>
+                    <h2 class="article-title">
+                        <a href="#">L'avenir de la cybersécurité dans un monde connecté</a>
+                    </h2>
+                    <p class="article-excerpt">
+                        Avec l'augmentation des cyberattaques, les entreprises investissent massivement dans de nouvelles solutions de sécurité. Focus sur les technologies émergentes...
+                    </p>
+                    <div class="article-actions">
+                        <button class="action-btn">👁️ Marquer lu</button>
+                        <button class="action-btn">⭐ Favoris</button>
+                        <button class="action-btn">💬 Commenter</button>
+                    </div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=300&fit=crop" alt="Security" class="article-image">
+            </article>
+        </main>
+
+        <!-- Sidebar droite -->
+        <aside class="sidebar-right">
+            <div class="widget">
+                <h4>🔍 Recherche</h4>
+                <input type="text" class="search-box" placeholder="Rechercher dans les articles...">
+            </div>
+
+            <div class="widget">
+                <h4>🎛️ Filtres</h4>
+                <div class="filter-group">
+                    <label class="filter-label">Source</label>
+                    <select class="filter-select">
+                        <option>Toutes les sources</option>
+                        <option>TechCrunch</option>
+                        <option>Le Monde Tech</option>
+                        <option>Wired</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Statut</label>
+                    <select class="filter-select">
+                        <option>Tous</option>
+                        <option>Non lus</option>
+                        <option>Lus</option>
+                        <option>Favoris</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="widget">
+                <h4>📊 Statistiques</h4>
+                <div class="stat-item">
+                    <span class="stat-label">Articles non lus</span>
+                    <span class="stat-value">47</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Favoris</span>
+                    <span class="stat-value">12</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Collections</span>
+                    <span class="stat-value">7</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Flux RSS</span>
+                    <span class="stat-value">23</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+</body>
+</html>
