@@ -1,4 +1,4 @@
-// frontend/src/components/Articles/ArticleSearch.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { articlesService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,7 +19,7 @@ const ArticleSearch = ({ collectionId, feeds = [] }) => {
     offset: 0
   });
 
-  // Fonction de recherche avec debounce pour éviter trop de requêtes
+  
   const debouncedSearch = useCallback(
     debounce(async (searchFilters) => {
       if (!collectionId) return;
@@ -40,7 +40,7 @@ const ArticleSearch = ({ collectionId, feeds = [] }) => {
     [collectionId]
   );
 
-  // Effet pour lancer la recherche quand les filtres changent
+  
   useEffect(() => {
     debouncedSearch(filters);
   }, [filters, debouncedSearch]);
@@ -49,7 +49,7 @@ const ArticleSearch = ({ collectionId, feeds = [] }) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
-      offset: 0 // Reset pagination
+      offset: 0 
     }));
   };
 
@@ -57,7 +57,7 @@ const ArticleSearch = ({ collectionId, feeds = [] }) => {
     try {
       await articlesService.updateStatus(articleId, { is_read: isRead });
       
-      // Mettre à jour l'article dans la liste locale
+      
       setArticles(prev => prev.map(article => 
         article.id === articleId 
           ? { ...article, is_read: isRead }
@@ -73,7 +73,7 @@ const ArticleSearch = ({ collectionId, feeds = [] }) => {
     try {
       await articlesService.updateStatus(articleId, { is_favorite: isFavorite });
       
-      // Mettre à jour l'article dans la liste locale
+      
       setArticles(prev => prev.map(article => 
         article.id === articleId 
           ? { ...article, is_favorite: isFavorite }

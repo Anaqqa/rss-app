@@ -13,20 +13,20 @@ router = APIRouter(prefix="/export", tags=["export"])
 
 @router.get("/opml")
 def export_opml(
-    collection_ids: str = None,  # IDs séparés par des virgules
+    collection_ids: str = None,  
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     """Exporter les flux RSS au format OPML"""
     
-    # Construire la requête selon les collections demandées
+    
     query = db.query(models.RSSFeed).join(models.Collection)
     
     if collection_ids:
         collection_id_list = [int(id.strip()) for id in collection_ids.split(',')]
         query = query.filter(models.RSSFeed.collection_id.in_(collection_id_list))
     
-    # Filtrer par utilisateur (propriétaire ou membre)
+    
     query = query.filter(
         (models.Collection.owner_id == current_user.id) |
         (models.Collection.id.in_(
@@ -38,7 +38,7 @@ def export_opml(
     
     feeds = query.all()
     
-    # Créer le document OPML
+    
     opml = ET.Element("opml", version="2.0")
     head = ET.SubElement(opml, "head")
     
@@ -50,7 +50,7 @@ def export_opml(
     
     body = ET.SubElement(opml, "body")
     
-    # Grouper par collection
+    
     collections_data = {}
     for feed in feeds:
         collection = feed.collection
@@ -61,7 +61,7 @@ def export_opml(
             }
         collections_data[collection.id]['feeds'].append(feed)
     
-    # Créer la structure OPML
+    
     for collection_data in collections_data.values():
         outline = ET.SubElement(body, "outline", text=collection_data['name'])
         
@@ -78,10 +78,10 @@ def export_opml(
             if feed.description:
                 feed_outline.set("description", feed.description)
     
-    # Convertir en string XML
+    
     xml_str = ET.tostring(opml, encoding='unicode')
     
-    # Retourner comme fichier téléchargeable
+    
     return Response(
         content=xml_str,
         media_type="application/xml",
@@ -96,7 +96,7 @@ def export_json(
 ):
     """Exporter les flux RSS au format JSON"""
     
-    # Même logique que pour OPML
+    
     query = db.query(models.RSSFeed).join(models.Collection)
     
     if collection_ids:
@@ -114,7 +114,7 @@ def export_json(
     
     feeds = query.all()
     
-    # Créer la structure JSON
+    
     export_data = {
         "export_info": {
             "user": current_user.username,
@@ -124,7 +124,7 @@ def export_json(
         "collections": []
     }
     
-    # Grouper par collection
+    
     collections_data = {}
     for feed in feeds:
         collection = feed.collection
@@ -150,7 +150,7 @@ def export_json(
     
     export_data['collections'] = list(collections_data.values())
     
-    # Retourner comme fichier JSON téléchargeable
+    
     json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
     
     return Response(
@@ -167,7 +167,7 @@ def export_csv(
 ):
     """Exporter les flux RSS au format CSV"""
     
-    # Même logique de filtrage
+    
     query = db.query(models.RSSFeed).join(models.Collection)
     
     if collection_ids:
@@ -185,17 +185,17 @@ def export_csv(
     
     feeds = query.all()
     
-    # Créer le contenu CSV
+    
     csv_lines = []
     csv_lines.append("Collection Name,Feed Title,RSS URL,Site URL,Description,Update Frequency")
     
     for feed in feeds:
-        collection_name = feed.collection.name.replace('"', '""')  # Échapper les guillemets
+        collection_name = feed.collection.name.replace('"', '""')  
         feed_title = feed.title.replace('"', '""')
         description = (feed.description or '').replace('"', '""')
         site_url = feed.site_url or ''
         
-        # ✅ Version corrigée avec guillemets doubles
+        
         csv_lines.append(f'"{collection_name}","{feed_title}","{feed.url}","{site_url}","{description}",{feed.update_frequency}')
     
     csv_content = '\n'.join(csv_lines)
@@ -209,7 +209,7 @@ def export_csv(
 @router.post("/import/opml")
 async def import_opml(
     file: UploadFile = File(...),
-    collection_id: int = None,  # Collection de destination (optionnel)
+    collection_id: int = None,  
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -219,14 +219,14 @@ async def import_opml(
         raise HTTPException(status_code=400, detail="Le fichier doit être au format .opml")
     
     try:
-        # Lire le contenu du fichier
+        
         content = await file.read()
         xml_content = content.decode('utf-8')
         
-        # Parser le XML
+        
         root = ET.fromstring(xml_content)
         
-        # Créer une collection par défaut si nécessaire
+        
         if not collection_id:
             import_collection = models.Collection(
                 name=f"Import OPML - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -239,7 +239,7 @@ async def import_opml(
             db.refresh(import_collection)
             collection_id = import_collection.id
         else:
-            # Vérifier que la collection existe et appartient à l'utilisateur
+            
             collection = db.query(models.Collection).filter(
                 models.Collection.id == collection_id,
                 models.Collection.owner_id == current_user.id
@@ -250,13 +250,13 @@ async def import_opml(
         imported_feeds = []
         skipped_feeds = []
         
-        # Parser les flux dans le OPML
+        
         body = root.find('.//body')
         if body is not None:
             for outline in body.findall('.//outline[@type="rss"]'):
                 xml_url = outline.get('xmlUrl')
                 if xml_url:
-                    # Vérifier si le flux existe déjà
+                    
                     existing_feed = db.query(models.RSSFeed).filter(
                         models.RSSFeed.url == xml_url
                     ).first()
@@ -268,7 +268,7 @@ async def import_opml(
                         })
                         continue
                     
-                    # Créer le nouveau flux
+                    
                     new_feed = models.RSSFeed(
                         collection_id=collection_id,
                         title=outline.get('text', 'Flux sans titre'),
@@ -317,15 +317,15 @@ async def import_json(
         imported_feeds = []
         skipped_feeds = []
         
-        # Traiter les collections du fichier JSON
+        
         collections_data = data.get('collections', [])
         
         for collection_data in collections_data:
-            # Créer ou utiliser la collection
+            
             if collection_id:
                 target_collection_id = collection_id
             else:
-                # Créer une nouvelle collection
+                
                 new_collection = models.Collection(
                     name=collection_data.get('name', 'Collection importée'),
                     description=collection_data.get('description', ''),
@@ -337,13 +337,13 @@ async def import_json(
                 db.refresh(new_collection)
                 target_collection_id = new_collection.id
             
-            # Traiter les flux de cette collection
+            
             for feed_data in collection_data.get('feeds', []):
                 feed_url = feed_data.get('url')
                 if not feed_url:
                     continue
                 
-                # Vérifier si le flux existe déjà
+                
                 existing_feed = db.query(models.RSSFeed).filter(
                     models.RSSFeed.url == feed_url
                 ).first()
@@ -355,7 +355,7 @@ async def import_json(
                     })
                     continue
                 
-                # Créer le nouveau flux
+                
                 new_feed = models.RSSFeed(
                     collection_id=target_collection_id,
                     title=feed_data.get('title', 'Flux sans titre'),

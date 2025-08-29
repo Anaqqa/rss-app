@@ -1,4 +1,4 @@
-// frontend/src/components/Articles/ArticleCard.js
+
 import React from 'react';
 
 const ArticleCard = ({ article, onToggleRead, onToggleFavorite }) => {

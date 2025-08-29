@@ -1,4 +1,4 @@
-/* frontend/src/styles/medium-theme.css - CSS COMPLET MEDIUM */
+
 * {
     margin: 0;
     padding: 0;
@@ -23,7 +23,7 @@ body {
     background: var(--background);
 }
 
-/* Header style Medium */
+
 .header {
     background: var(--background);
     border-bottom: 1px solid var(--border-light);
@@ -90,7 +90,7 @@ body {
     border: none;
 }
 
-/* Layout principal */
+
 .main-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -100,7 +100,7 @@ body {
     padding: 48px 24px;
 }
 
-/* Sidebar collections */
+
 .sidebar {
     position: sticky;
     top: 100px;
@@ -137,7 +137,7 @@ body {
     text-decoration: none;
 }
 
-/* Feed principal */
+
 .feed-main {
     min-height: 80vh;
 }
@@ -160,7 +160,7 @@ body {
     font-size: 16px;
 }
 
-/* Article cards style Medium */
+
 .article-card {
     display: flex;
     gap: 24px;
@@ -258,7 +258,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Sidebar droite */
+
 .sidebar-right {
     position: sticky;
     top: 100px;
@@ -306,7 +306,7 @@ body {
     font-size: 13px;
 }
 
-/* Tags/stats */
+
 .stat-item {
     display: flex;
     justify-content: space-between;
@@ -323,7 +323,7 @@ body {
     font-weight: 500;
 }
 
-/* Override Bootstrap */
+
 .btn-primary {
     background-color: var(--primary-bordeaux) !important;
     border-color: var(--primary-bordeaux) !important;
@@ -353,7 +353,7 @@ body {
     color: var(--primary-bordeaux) !important;
 }
 
-/* Responsive */
+
 @media (max-width: 1024px) {
     .main-container {
         grid-template-columns: 200px 1fr;
@@ -394,7 +394,7 @@ body {
     }
 }
 
-/* Dropdown fixes */
+
 .dropdown-menu {
     z-index: 1050;
 }
@@ -403,12 +403,12 @@ body {
     display: none;
 }
 
-/* Text utilities */
+
 .text-muted {
     color: var(--text-secondary) !important;
 }
 
-/* Card overrides pour maintenir le style Medium */
+
 .card {
     border: 1px solid var(--border-light);
     border-radius: 8px;

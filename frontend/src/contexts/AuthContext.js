@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté au chargement
+    
     const initAuth = async () => {
       try {
         if (authService.isAuthenticated()) {
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
             setUser(storedUser);
             setIsAuthenticated(true);
           } else {
-            // Récupérer les infos utilisateur depuis l'API
+            
             const currentUser = await authService.getCurrentUser();
             setUser(currentUser);
             setIsAuthenticated(true);

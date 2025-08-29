@@ -1,4 +1,4 @@
-// frontend/src/components/Auth/OAuthCallback.js - Version corrigée
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const OAuthCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth(); // On garde le contexte pour la cohérence
+  const { login } = useAuth(); 
   const [status, setStatus] = useState('processing');
   const [error, setError] = useState('');
 
@@ -33,22 +33,22 @@ const OAuthCallback = () => {
 
       if (token) {
         try {
-          // CORRECTION: Directement stocker le token et récupérer l'utilisateur
+          
           localStorage.setItem('access_token', token);
           
-          // Récupérer les infos utilisateur avec le token
+          
           const { authService } = await import('../../services/api');
           const user = await authService.getCurrentUser();
           
-          // Stocker les infos utilisateur
+          
           localStorage.setItem('user', JSON.stringify(user));
           
-          // CORRECTION: Forcer le rechargement du contexte d'authentification
-          // Au lieu d'appeler login(), on déclenche un rechargement complet
+          
+          
           setStatus('success');
           
           setTimeout(() => {
-            // Forcer le rechargement de la page pour que AuthContext se mette à jour
+            
             window.location.href = '/dashboard';
           }, 1500);
           
@@ -57,7 +57,7 @@ const OAuthCallback = () => {
           setStatus('error');
           setError('Erreur lors de la finalisation de la connexion.');
           
-          // Nettoyer en cas d'erreur
+          
           localStorage.removeItem('access_token');
           localStorage.removeItem('user');
           

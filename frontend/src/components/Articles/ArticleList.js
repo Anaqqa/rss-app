@@ -1,4 +1,4 @@
-// frontend/src/components/Articles/ArticleList.js
+
 import React, { useState, useEffect } from 'react';
 import ArticleCard from './ArticleCard';
 import { articlesService } from '../../services/api';
@@ -16,7 +16,7 @@ const ArticleList = ({
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    fetchArticles(true); // Reset et recharge
+    fetchArticles(true); 
   }, [collectionId, filters, searchTerm]);
 
   const fetchArticles = async (reset = false) => {
@@ -28,7 +28,7 @@ const ArticleList = ({
       const allFilters = {
         ...filters,
         search: searchTerm,
-        limit: 20,
+        limit: 50,
         offset: currentOffset
       };
 
@@ -36,13 +36,13 @@ const ArticleList = ({
       
       if (reset) {
         setArticles(newArticles);
-        setOffset(20);
+        setOffset(50);
       } else {
         setArticles(prev => [...prev, ...newArticles]);
-        setOffset(prev => prev + 20);
+        setOffset(prev => prev + 50);
       }
       
-      setHasMore(newArticles.length === 20);
+      setHasMore(newArticles.length === 50);
     } catch (err) {
       console.error('Erreur lors du chargement des articles:', err);
       setError('Erreur lors du chargement des articles');

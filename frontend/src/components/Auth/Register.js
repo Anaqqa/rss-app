@@ -1,4 +1,4 @@
-// frontend/src/components/Auth/Register.js - Version complète avec OAuth2
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,7 +22,7 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Vérifier si OAuth est disponible au chargement
+  
   useEffect(() => {
     const checkOAuth = async () => {
       try {
@@ -50,7 +50,7 @@ const Register = () => {
     setError('');
     setSuccess('');
 
-    // Validation côté client
+    
     if (formData.password !== formData.confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
       setLoading(false);
@@ -64,7 +64,7 @@ const Register = () => {
     }
 
     try {
-      // Enlever confirmPassword avant d'envoyer
+      
       const { confirmPassword, ...userData } = formData;
       await register(userData);
       

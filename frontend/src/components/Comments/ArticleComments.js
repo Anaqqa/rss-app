@@ -1,4 +1,4 @@
-// frontend/src/components/Comments/ArticleComments.js
+
 import React, { useState, useEffect } from 'react';
 import { commentService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';

@@ -1,4 +1,4 @@
-// frontend/src/components/Messaging/CollectionMessaging.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import { messageService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';

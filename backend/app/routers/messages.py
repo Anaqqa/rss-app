@@ -1,4 +1,4 @@
-# backend/app/routers/messages.py
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
@@ -18,16 +18,16 @@ def get_collection_messages(
 ):
     """Obtenir les messages d'une collection partagée"""
     
-    # Vérifier l'accès à la collection
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Vérifier que la collection est partagée
+    
     if not collection.is_shared:
         raise HTTPException(status_code=400, detail="Cette collection n'est pas partagée")
     
-    # Vérifier les permissions
+    
     has_access = False
     if collection.owner_id == current_user.id:
         has_access = True
@@ -45,12 +45,12 @@ def get_collection_messages(
     if not has_access:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Récupérer les messages avec les infos utilisateur
+    
     messages = db.query(models.Message).filter(
         models.Message.collection_id == collection_id
     ).order_by(desc(models.Message.created_at)).offset(offset).limit(limit).all()
     
-    # Transformer en format JSON avec infos utilisateur
+    
     result = []
     for message in messages:
         result.append({
@@ -83,7 +83,7 @@ def create_message(
     if not collection_id or not content:
         raise HTTPException(status_code=400, detail="collection_id et content requis")
     
-    # Vérifier l'accès à la collection
+    
     collection = db.query(models.Collection).filter(
         models.Collection.id == collection_id
     ).first()
@@ -91,11 +91,11 @@ def create_message(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Vérifier que la collection est partagée
+    
     if not collection.is_shared:
         raise HTTPException(status_code=400, detail="Cette collection n'est pas partagée")
     
-    # Vérifier les permissions
+    
     has_access = False
     can_comment = False
     
@@ -121,7 +121,7 @@ def create_message(
     if not can_comment:
         raise HTTPException(status_code=403, detail="Vous n'avez pas l'autorisation d'envoyer des messages")
     
-    # Créer le message
+    
     db_message = models.Message(
         collection_id=collection_id,
         user_id=current_user.id,
@@ -132,7 +132,7 @@ def create_message(
     db.commit()
     db.refresh(db_message)
     
-    # Retourner le message avec infos utilisateur
+    
     return {
         "id": db_message.id,
         "collection_id": db_message.collection_id,
@@ -155,17 +155,17 @@ def delete_message(
 ):
     """Supprimer un message"""
     
-    # Récupérer le message
+    
     message = db.query(models.Message).filter(models.Message.id == message_id).first()
     if not message:
         raise HTTPException(status_code=404, detail="Message non trouvé")
     
-    # Récupérer la collection
+    
     collection = db.query(models.Collection).filter(
         models.Collection.id == message.collection_id
     ).first()
     
-    # Vérifier les permissions (auteur ou propriétaire de la collection)
+    
     if message.user_id != current_user.id and collection.owner_id != current_user.id:
         raise HTTPException(
             status_code=403, 

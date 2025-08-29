@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
-# Enums
+
 class ThemePreference(str, Enum):
     light = "light"
     dark = "dark"
@@ -13,7 +13,7 @@ class OAuthProvider(str, Enum):
     github = "github"
     microsoft = "microsoft"
 
-# ===== USER SCHEMAS =====
+
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
@@ -50,7 +50,7 @@ class UserUpdate(BaseModel):
     theme_preference: Optional[ThemePreference] = None
     font_size: Optional[int] = Field(None, ge=10, le=24)
 
-# ===== AUTHENTICATION SCHEMAS =====
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -60,7 +60,7 @@ class TokenData(BaseModel):
     user_id: Optional[int] = None
     
     
-# ===== COLLECTION SCHEMAS =====
+
 class CollectionBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
@@ -87,13 +87,13 @@ class CollectionWithStats(CollectionResponse):
     articles_count: int = 0
     unread_count: int = 0
     
-# ===== RSS FEED SCHEMAS =====
+
 class RSSFeedBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
-    url: str = Field(..., pattern=r'^https?://.+')  # Changé: regex -> pattern
+    url: str = Field(..., pattern=r'^https?://.+')  
     description: Optional[str] = None
-    site_url: Optional[str] = Field(None, pattern=r'^https?://.+')  # Changé: regex -> pattern
-    update_frequency: int = Field(default=60, ge=15, le=1440)  # Entre 15 min et 24h
+    site_url: Optional[str] = Field(None, pattern=r'^https?://.+')  
+    update_frequency: int = Field(default=60, ge=15, le=1440)  
     is_active: bool = True
 
 class RSSFeedCreate(RSSFeedBase):
@@ -118,7 +118,7 @@ class RSSFeedResponse(RSSFeedBase):
     class Config:
         from_attributes = True    
         
-# ===== ARTICLE SCHEMAS =====
+
 class ArticleBase(BaseModel):
     title: str = Field(..., max_length=300)
     link: str
@@ -133,14 +133,14 @@ class ArticleResponse(ArticleBase):
     guid: Optional[str] = None
     fetched_at: datetime
     
-    # États pour l'utilisateur connecté
+    
     is_read: Optional[bool] = None
     is_favorite: Optional[bool] = None
     
     class Config:
         from_attributes = True
 
-# ===== USER ARTICLE SCHEMAS =====
+
 class UserArticleUpdate(BaseModel):
     is_read: Optional[bool] = None
     is_favorite: Optional[bool] = None
@@ -158,7 +158,7 @@ class UserArticleResponse(BaseModel):
         from_attributes = True
         
 
-# ===== MESSAGE SCHEMAS =====
+
 class MessageBase(BaseModel):
     content: str = Field(..., min_length=1, max_length=1000)
 
@@ -174,13 +174,13 @@ class MessageResponse(MessageBase):
     user_id: int
     created_at: datetime
     
-    # Informations utilisateur pour l'affichage
+    
     user: UserResponse
     
     class Config:
         from_attributes = True
 
-# ===== COMMENT SCHEMAS =====
+
 class CommentBase(BaseModel):
     content: str = Field(..., min_length=1, max_length=2000)
 
@@ -199,13 +199,13 @@ class CommentResponse(CommentBase):
     created_at: datetime
     updated_at: datetime
     
-    # Informations utilisateur pour l'affichage
+    
     user: UserResponse
     
     class Config:
         from_attributes = True
 
-# ===== USER SIMPLE SCHEMA (pour éviter la récursion) =====
+
 class UserSimple(BaseModel):
     id: int
     username: str
@@ -215,14 +215,14 @@ class UserSimple(BaseModel):
     class Config:
         from_attributes = True
 
-# Redéfinir les schemas de message et commentaire avec UserSimple
+
 class MessageResponse(MessageBase):
     id: int
     collection_id: int
     user_id: int
     created_at: datetime
     
-    # Informations utilisateur pour l'affichage
+    
     user: UserSimple
     
     class Config:
@@ -236,7 +236,7 @@ class CommentResponse(CommentBase):
     created_at: datetime
     updated_at: datetime
     
-    # Informations utilisateur pour l'affichage
+    
     user: UserSimple
     
     class Config:

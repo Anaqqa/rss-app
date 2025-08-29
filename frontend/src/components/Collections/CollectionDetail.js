@@ -1,4 +1,3 @@
-// frontend/src/components/Collections/CollectionDetail.js - Version avec onglet Membres
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { collectionsService, feedsService, articlesService } from '../../services/api';

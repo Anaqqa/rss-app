@@ -1,13 +1,13 @@
-// frontend/src/App.js - VERSION COMPLÈTE AVEC MEDIUMLAYOUT
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-// Import des styles - ORDRE IMPORTANT
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/medium-theme.css';
 
-// Vos composants existants
+
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import OAuthCallback from './components/Auth/OAuthCallback';
@@ -17,10 +17,10 @@ import Collections from './components/Collections/Collections';
 import CollectionDetail from './components/Collections/CollectionDetail';
 import ExportImport from './components/ExportImport/ExportImport';
 
-// Import du MediumLayout
+
 import MediumLayout from './components/Layout/MediumLayout';
 
-// Composant pour protéger les routes
+
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
-// Composant pour rediriger les utilisateurs connectés
+
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   

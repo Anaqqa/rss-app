@@ -26,7 +26,7 @@ const Profile = () => {
       });
     }
 
-    // Vérifier si OAuth est disponible
+    
     const checkOAuth = async () => {
       try {
         const available = await oauthService.checkOAuthAvailability();
@@ -72,7 +72,7 @@ const Profile = () => {
     try {
       await oauthService.disconnectOAuth();
       setSuccess('Compte Google déconnecté avec succès');
-      // Recharger les données utilisateur
+      
       window.location.reload();
     } catch (error) {
       console.error('Erreur lors de la déconnexion OAuth:', error);
@@ -142,35 +142,7 @@ const Profile = () => {
 
               <hr />
 
-              {/* OAuth Section */}
-              {oauthAvailable && (
-                <div className="mb-4">
-                  <h5>Connexion Google</h5>
-                  {user.oauth_provider === 'google' ? (
-                    <div className="alert alert-info d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong>✅ Compte Google connecté</strong>
-                        <p className="mb-0 small">Vous pouvez vous connecter avec Google ou votre mot de passe</p>
-                      </div>
-                      <button 
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={handleDisconnectOAuth}
-                      >
-                        Déconnecter
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-muted">Associez votre compte Google pour une connexion plus rapide</p>
-                      <GoogleOAuth 
-                        isConnecting={true}
-                        onError={handleOAuthError}
-                      />
-                    </div>
-                  )}
-                  <hr />
-                </div>
-              )}
+          
 
               {/* Formulaire de mise à jour */}
               <form onSubmit={handleSubmit}>
@@ -203,42 +175,7 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="theme_preference" className="form-label">Thème</label>
-                    <select
-                      className="form-select"
-                      id="theme_preference"
-                      name="theme_preference"
-                      value={formData.theme_preference}
-                      onChange={handleChange}
-                      disabled={loading}
-                    >
-                      <option value="light">🌞 Clair</option>
-                      <option value="dark">🌙 Sombre</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="font_size" className="form-label">
-                      Taille de police ({formData.font_size}px)
-                    </label>
-                    <input
-                      type="range"
-                      className="form-range"
-                      id="font_size"
-                      name="font_size"
-                      min="10"
-                      max="24"
-                      value={formData.font_size}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                    <div className="d-flex justify-content-between">
-                      <small className="text-muted">Petit</small>
-                      <small className="text-muted">Grand</small>
-                    </div>
-                  </div>
-                </div>
+  
 
                 <button 
                   type="submit" 

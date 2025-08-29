@@ -268,13 +268,6 @@ const ExportImport = () => {
           <h2>📤 Export / Import RSS</h2>
           <p>Sauvegardez vos flux ou importez-en de nouveaux</p>
           
-          {/* Bouton de test de connexion */}
-          <div className="mb-3">
-            <button className="btn btn-secondary btn-sm" onClick={testConnection}>
-              🔍 Tester la connexion API
-            </button>
-          </div>
-          
           {/* Message de statut */}
           {message && (
             <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-danger'} mt-3`}>

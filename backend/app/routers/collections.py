@@ -1,4 +1,4 @@
-# backend/app/routers/collections.py - Version complète avec gestion des membres
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -14,12 +14,12 @@ def get_user_collections(
     db: Session = Depends(get_db)
 ):
     """Obtenir toutes les collections de l'utilisateur"""
-    # Collections possédées
+    
     owned_collections = db.query(models.Collection).filter(
         models.Collection.owner_id == current_user.id
     ).all()
     
-    # Collections partagées où l'utilisateur a accès
+    
     shared_collections = db.query(models.Collection).join(models.UserCollection).filter(
         and_(
             models.UserCollection.user_id == current_user.id,
@@ -62,7 +62,7 @@ def get_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Vérifier les permissions
+    
     if collection.owner_id != current_user.id:
         user_collection = db.query(models.UserCollection).filter(
             and_(
@@ -89,11 +89,11 @@ def update_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Seul le propriétaire peut modifier
+    
     if collection.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Seul le propriétaire peut modifier la collection")
     
-    # Mettre à jour les champs
+    
     for field, value in collection_update.dict(exclude_unset=True).items():
         setattr(collection, field, value)
     
@@ -114,7 +114,7 @@ def delete_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Seul le propriétaire peut supprimer
+    
     if collection.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Seul le propriétaire peut supprimer la collection")
     
@@ -123,7 +123,7 @@ def delete_collection(
     
     return None
 
-# ==================== NOUVELLES ROUTES POUR LA GESTION DES MEMBRES ====================
+
 
 @router.get("/{collection_id}/members")
 def get_collection_members(
@@ -133,16 +133,16 @@ def get_collection_members(
 ):
     """Obtenir les membres d'une collection partagée"""
     
-    # Vérifier l'accès à la collection  
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Seul le propriétaire peut voir les membres
+    
     if collection.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Seul le propriétaire peut voir les membres")
     
-    # Récupérer les membres
+    
     members = db.query(models.UserCollection).filter(
         models.UserCollection.collection_id == collection_id
     ).all()
@@ -186,25 +186,25 @@ def invite_user_to_collection(
     if not username:
         raise HTTPException(status_code=400, detail="Nom d'utilisateur requis")
     
-    # Vérifier la collection
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Seul le propriétaire peut inviter
+    
     if collection.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Seul le propriétaire peut inviter des membres")
     
-    # Vérifier que la collection est partagée
+    
     if not collection.is_shared:
         raise HTTPException(status_code=400, detail="Cette collection n'est pas partagée")
     
-    # Trouver l'utilisateur à inviter
+    
     user_to_invite = db.query(models.User).filter(models.User.username == username).first()
     if not user_to_invite:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
-    # Vérifier s'il est déjà membre
+    
     existing_member = db.query(models.UserCollection).filter(
         and_(
             models.UserCollection.user_id == user_to_invite.id,
@@ -215,11 +215,11 @@ def invite_user_to_collection(
     if existing_member:
         raise HTTPException(status_code=400, detail="Cet utilisateur est déjà membre de cette collection")
     
-    # Ne peut pas s'inviter soi-même
+    
     if user_to_invite.id == current_user.id:
         raise HTTPException(status_code=400, detail="Vous ne pouvez pas vous inviter vous-même")
     
-    # Créer l'invitation/membership
+    
     new_member = models.UserCollection(
         user_id=user_to_invite.id,
         collection_id=collection_id,
@@ -259,16 +259,16 @@ def remove_member_from_collection(
 ):
     """Retirer un membre d'une collection partagée"""
     
-    # Vérifier la collection
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Seul le propriétaire peut retirer des membres
+    
     if collection.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Seul le propriétaire peut retirer des membres")
     
-    # Trouver le membre
+    
     member = db.query(models.UserCollection).filter(
         and_(
             models.UserCollection.id == member_id,
@@ -294,16 +294,16 @@ def update_member_permissions(
 ):
     """Mettre à jour les permissions d'un membre"""
     
-    # Vérifier la collection
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Seul le propriétaire peut modifier les permissions
+    
     if collection.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Seul le propriétaire peut modifier les permissions")
     
-    # Trouver le membre
+    
     member = db.query(models.UserCollection).filter(
         and_(
             models.UserCollection.id == member_id,
@@ -314,7 +314,7 @@ def update_member_permissions(
     if not member:
         raise HTTPException(status_code=404, detail="Membre non trouvé")
     
-    # Mettre à jour les permissions
+    
     permissions = permissions_data.get("permissions", {})
     member.can_read = permissions.get("can_read", member.can_read)
     member.can_add_feeds = permissions.get("can_add_feeds", member.can_add_feeds)

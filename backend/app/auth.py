@@ -9,15 +9,15 @@ from . import models, schemas
 from .database import get_db
 import os
 
-# Configuration
+
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-# Password hashing
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# HTTP Bearer pour récupérer le token
+
 security = HTTPBearer()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

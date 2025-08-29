@@ -1,4 +1,4 @@
-// frontend/src/components/Auth/Login.js - Version complète avec OAuth2
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,7 +17,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Vérifier si OAuth est disponible au chargement
+  
   useEffect(() => {
     const checkOAuth = async () => {
       try {

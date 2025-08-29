@@ -17,7 +17,7 @@ def get_article_comments(
 ):
     """Obtenir les commentaires d'un article"""
     
-    # Vérifier que l'article existe
+    
     article = db.query(models.Article).join(models.RSSFeed).filter(
         models.Article.id == article_id
     ).first()
@@ -27,7 +27,7 @@ def get_article_comments(
     
     collection = article.feed.collection
     
-    # Vérifier l'accès à la collection
+    
     has_access = False
     if collection.owner_id == current_user.id:
         has_access = True
@@ -45,12 +45,12 @@ def get_article_comments(
     if not has_access:
         raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Récupérer les commentaires
+    
     comments = db.query(models.Comment).filter(
         models.Comment.article_id == article_id
     ).order_by(desc(models.Comment.created_at)).offset(offset).limit(limit).all()
     
-    # Transformer en format JSON
+    
     result = []
     for comment in comments:
         result.append({
@@ -86,7 +86,7 @@ def create_comment(
     if not article_id or not collection_id or not content:
         raise HTTPException(status_code=400, detail="article_id, collection_id et content requis")
     
-    # Vérifier que l'article existe
+    
     article = db.query(models.Article).join(models.RSSFeed).filter(
         models.Article.id == article_id
     ).first()
@@ -94,11 +94,11 @@ def create_comment(
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
-    # Vérifier que la collection correspond
+    
     if article.feed.collection_id != collection_id:
         raise HTTPException(status_code=400, detail="L'article n'appartient pas à cette collection")
     
-    # Récupérer la collection
+    
     collection = db.query(models.Collection).filter(
         models.Collection.id == collection_id
     ).first()
@@ -106,11 +106,11 @@ def create_comment(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Vérifier que la collection est partagée
+    
     if not collection.is_shared:
         raise HTTPException(status_code=400, detail="Les commentaires ne sont disponibles que sur les collections partagées")
     
-    # Vérifier les permissions
+    
     has_access = False
     can_comment = False
     
@@ -136,7 +136,7 @@ def create_comment(
     if not can_comment:
         raise HTTPException(status_code=403, detail="Vous n'avez pas l'autorisation de commenter")
     
-    # Créer le commentaire
+    
     db_comment = models.Comment(
         article_id=article_id,
         collection_id=collection_id,
@@ -148,7 +148,7 @@ def create_comment(
     db.commit()
     db.refresh(db_comment)
     
-    # Retourner le commentaire avec infos utilisateur
+    
     return {
         "id": db_comment.id,
         "article_id": db_comment.article_id,

@@ -1,4 +1,4 @@
-# backend/app/routers/articles.py - Version complète avec recherche
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -24,12 +24,12 @@ def get_collection_articles(
 ):
     """Obtenir les articles d'une collection avec filtres et recherche plein texte"""
     
-    # Vérifier l'accès à la collection
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Vérifier les permissions
+    
     if collection.owner_id != current_user.id:
         user_collection = db.query(models.UserCollection).filter(
             and_(
@@ -41,16 +41,16 @@ def get_collection_articles(
         if not user_collection:
             raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Construction de la requête de base
+    
     query = db.query(models.Article).join(models.RSSFeed).filter(
         models.RSSFeed.collection_id == collection_id
     )
     
-    # Filtrage par flux spécifique
+    
     if feed_id:
         query = query.filter(models.Article.feed_id == feed_id)
     
-    # RECHERCHE PLEIN TEXTE
+    
     if search and search.strip():
         search_term = f"%{search.strip()}%"
         query = query.filter(
@@ -63,7 +63,7 @@ def get_collection_articles(
             )
         )
     
-    # Jointure avec UserArticle pour les filtres lu/non lu et favoris
+    
     query = query.outerjoin(
         models.UserArticle,
         and_(
@@ -72,7 +72,7 @@ def get_collection_articles(
         )
     )
     
-    # Filtrage par statut lu/non lu
+    
     if is_read is not None:
         if is_read:
             query = query.filter(models.UserArticle.is_read == True)
@@ -84,7 +84,7 @@ def get_collection_articles(
                 )
             )
     
-    # Filtrage par favoris
+    
     if is_favorite is not None:
         if is_favorite:
             query = query.filter(models.UserArticle.is_favorite == True)
@@ -96,13 +96,13 @@ def get_collection_articles(
                 )
             )
     
-    # Trier par date de publication (plus récent en premier)
+    
     query = query.order_by(desc(models.Article.published_date))
     
-    # Pagination
+    
     articles = query.offset(offset).limit(limit).all()
     
-    # Enrichir avec les données utilisateur
+    
     result = []
     for article in articles:
         user_article = db.query(models.UserArticle).filter(
@@ -139,12 +139,12 @@ def update_article_status(
 ):
     """Mettre à jour le statut d'un article (lu/non lu, favori)"""
     
-    # Vérifier que l'article existe
+    
     article = db.query(models.Article).filter(models.Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
-    # Vérifier l'accès à la collection
+    
     collection = db.query(models.Collection).join(models.RSSFeed).filter(
         models.RSSFeed.id == article.feed_id
     ).first()
@@ -160,7 +160,7 @@ def update_article_status(
         if not user_collection:
             raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Chercher ou créer l'enregistrement UserArticle
+    
     user_article = db.query(models.UserArticle).filter(
         and_(
             models.UserArticle.user_id == current_user.id,
@@ -177,7 +177,7 @@ def update_article_status(
         )
         db.add(user_article)
     
-    # Mettre à jour les statuts
+    
     if status_update.is_read is not None:
         user_article.is_read = status_update.is_read
         user_article.read_at = datetime.utcnow() if status_update.is_read else None
@@ -201,7 +201,7 @@ def search_articles_global(
 ):
     """Recherche globale dans tous les articles accessibles par l'utilisateur"""
     
-    # Collections accessibles par l'utilisateur
+    
     owned_collections = db.query(models.Collection.id).filter(
         models.Collection.owner_id == current_user.id
     ).subquery()
@@ -213,7 +213,7 @@ def search_articles_global(
         )
     ).subquery()
     
-    # Recherche dans les articles
+    
     search_term = f"%{search.strip()}%"
     
     query = db.query(models.Article).join(models.RSSFeed).join(models.Collection).filter(
@@ -233,7 +233,7 @@ def search_articles_global(
     
     articles = query.offset(offset).limit(limit).all()
     
-    # Enrichir avec les données utilisateur
+    
     result = []
     for article in articles:
         user_article = db.query(models.UserArticle).filter(

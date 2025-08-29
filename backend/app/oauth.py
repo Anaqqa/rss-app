@@ -1,4 +1,4 @@
-#fichier pour OAuth2
+
 import httpx
 from fastapi import HTTPException
 from authlib.integrations.starlette_client import OAuth
@@ -11,11 +11,11 @@ import urllib.parse
 
 from .config import settings
 
-# Configuration OAuth avec Authlib
+
 config = Config()
 oauth = OAuth(config)
 
-# Configuration du client Google OAuth
+
 if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
     oauth.register(
         name='google',
@@ -44,10 +44,10 @@ class OAuth2Service:
                 detail="Google OAuth non configuré"
             )
         
-        # Générer un state unique pour la sécurité
+        
         state = secrets.token_urlsafe(32)
         
-        # Paramètres OAuth2
+        
         params = {
             'client_id': self.google_client_id,
             'redirect_uri': settings.GOOGLE_REDIRECT_URI,
@@ -58,7 +58,7 @@ class OAuth2Service:
             'prompt': 'consent'
         }
         
-        # Construire l'URL
+        
         auth_url = f"{settings.GOOGLE_AUTHORIZATION_URL}?{urllib.parse.urlencode(params)}"
         
         return {
@@ -74,7 +74,7 @@ class OAuth2Service:
                 detail="Google OAuth non configuré"
             )
         
-        # Données pour l'échange de token
+        
         token_data = {
             'client_id': self.google_client_id,
             'client_secret': self.google_client_secret,
@@ -83,7 +83,7 @@ class OAuth2Service:
             'redirect_uri': settings.GOOGLE_REDIRECT_URI,
         }
         
-        # Requête pour obtenir le token
+        
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 settings.GOOGLE_TOKEN_URL,
@@ -120,5 +120,5 @@ class OAuth2Service:
             
             return response.json()
 
-# Instance globale du service OAuth2
+
 oauth2_service = OAuth2Service()

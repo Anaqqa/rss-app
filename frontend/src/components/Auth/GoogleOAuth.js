@@ -1,4 +1,4 @@
-// frontend/src/components/Auth/GoogleOAuth.js - Version corrigée
+
 import React, { useState } from 'react';
 import { oauthService } from '../../services/oauth';
 
@@ -9,13 +9,13 @@ const GoogleOAuth = ({ onSuccess, onError, isConnecting = false }) => {
     try {
       setLoading(true);
       
-      // Obtenir l'URL d'autorisation Google
+      
       const { auth_url, state } = await oauthService.getGoogleAuthUrl();
       
-      // Stocker le state pour validation
+      
       sessionStorage.setItem('oauth_state', state);
       
-      // Rediriger vers Google
+      
       window.location.href = auth_url;
       
     } catch (error) {
@@ -54,5 +54,5 @@ const GoogleOAuth = ({ onSuccess, onError, isConnecting = false }) => {
   );
 };
 
-// CORRECTION : Export par défaut
+
 export default GoogleOAuth;

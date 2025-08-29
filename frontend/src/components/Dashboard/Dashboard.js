@@ -1,8 +1,9 @@
-// frontend/src/components/Dashboard/Dashboard.js - AVEC DERNIERS ARTICLES
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { collectionsService, articlesService } from '../../services/api';
+import { collectionsService, articlesService, commentService } from '../../services/api';
+import ArticleComments from '../Comments/ArticleComments';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -14,6 +15,10 @@ const Dashboard = () => {
     articles: { total: 0, favorites: 0, unread: 0 }
   });
   const [error, setError] = useState(null);
+  
+  
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -24,7 +29,7 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
       
-      // Charger les collections
+      
       const collections = await collectionsService.getAll();
       
       const personalCollections = collections.filter(col => !col.is_shared);
@@ -40,24 +45,29 @@ const Dashboard = () => {
         articles: { total: 0, favorites: 0, unread: 0 }
       });
 
-      // Essayer de charger les articles récents
+      
       try {
         let recentArticles = [];
         
-        // Pour chaque collection, essayer de récupérer les articles
+        
         for (const collection of collections) {
           try {
             const collectionArticles = await articlesService.getByCollection(collection.id, { 
               limit: 5,
               offset: 0 
             });
-            recentArticles = [...recentArticles, ...collectionArticles];
+            
+            const articlesWithCollection = collectionArticles.map(article => ({
+              ...article,
+              collection: collection
+            }));
+            recentArticles = [...recentArticles, ...articlesWithCollection];
           } catch (err) {
             console.log(`Pas d'articles pour la collection ${collection.name}`);
           }
         }
         
-        // Trier par date et prendre les 10 plus récents
+        
         recentArticles.sort((a, b) => new Date(b.published_date) - new Date(a.published_date));
         setArticles(recentArticles.slice(0, 10));
         
@@ -104,6 +114,23 @@ const Dashboard = () => {
     }
   };
 
+  
+  const handleCommentClick = (article) => {
+    
+    if (!article.collection?.is_shared) {
+      alert('Les commentaires ne sont disponibles que sur les collections partagées');
+      return;
+    }
+    
+    setSelectedArticle(article);
+    setShowComments(true);
+  };
+
+  const handleCloseComments = () => {
+    setShowComments(false);
+    setSelectedArticle(null);
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -142,6 +169,34 @@ const Dashboard = () => {
     );
   }
 
+  
+  if (showComments && selectedArticle) {
+    return (
+      <div>
+        {/* En-tête avec bouton retour */}
+        <div className="d-flex align-items-center mb-4">
+          <button 
+            className="btn btn-outline-secondary me-3"
+            onClick={handleCloseComments}
+          >
+            ← Retour au Dashboard
+          </button>
+          <div>
+            <h2 className="h4 mb-1">💭 Commentaires</h2>
+            <p className="text-muted mb-0">Article : {selectedArticle.title}</p>
+          </div>
+        </div>
+
+        {/* Composant commentaires */}
+        <ArticleComments 
+          articleId={selectedArticle.id}
+          collectionId={selectedArticle.collection.id}
+          articleTitle={selectedArticle.title}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
       {/* En-tête du feed */}
@@ -163,6 +218,13 @@ const Dashboard = () => {
                 <span>{formatDate(article.published_date)}</span>
                 <span>•</span>
                 <span>5 min de lecture</span>
+                {/* Badge collection partagée */}
+                {article.collection?.is_shared && (
+                  <>
+                    <span>•</span>
+                    <span className="badge bg-info ms-1">👥 {article.collection.name}</span>
+                  </>
+                )}
               </div>
               
               <h2 className="article-title">
@@ -186,7 +248,7 @@ const Dashboard = () => {
                   className={`action-btn ${article.is_read ? 'active' : ''}`}
                   onClick={() => handleToggleRead(article.id)}
                 >
-                  👁️ {article.is_read ? 'Lu' : 'Marquer lu'}
+                  👁️ {article.is_read ? 'Lu' : 'Non lu'}
                 </button>
                 
                 <button 
@@ -196,7 +258,17 @@ const Dashboard = () => {
                   ⭐ {article.is_favorite ? 'Favoris' : 'Ajouter favoris'}
                 </button>
                 
-                <button className="action-btn">
+                {/* BOUTON COMMENTER  */}
+                <button 
+                  className={`action-btn ${article.collection?.is_shared ? '' : 'disabled'}`}
+                  onClick={() => handleCommentClick(article)}
+                  disabled={!article.collection?.is_shared}
+                  title={
+                    article.collection?.is_shared 
+                      ? 'Commenter cet article' 
+                      : 'Commentaires disponibles uniquement sur les collections partagées'
+                  }
+                >
                   💬 Commenter
                 </button>
               </div>
@@ -235,45 +307,14 @@ const Dashboard = () => {
               </p>
               <div className="article-actions">
                 {stats.collections.total === 0 ? (
-                  <Link to="/collections" className="action-btn active">📚 Créer une collection</Link>
+                  <Link to="/collections" className="action-btn">
+                    📚 Créer une collection
+                  </Link>
                 ) : (
-                  <Link to="/collections" className="action-btn active">📡 Ajouter des flux RSS</Link>
+                  <Link to="/collections" className="action-btn">
+                    📡 Ajouter des flux RSS
+                  </Link>
                 )}
-                <Link to="/export-import" className="action-btn">📥 Importer des flux</Link>
-                <button className="action-btn" onClick={fetchDashboardData}>🔄 Actualiser</button>
-              </div>
-            </div>
-            <div className="article-image" style={{ 
-              background: 'linear-gradient(135deg, #722f37 0%, #5a252a 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2rem',
-              color: 'white'
-            }}>
-              🚀
-            </div>
-          </div>
-
-          {/* Stats en tant qu'article */}
-          <div className="article-card">
-            <div className="article-content">
-              <div className="article-meta">
-                <span className="source-name">Statistiques</span>
-                <span>•</span>
-                <span>Votre profil RSS</span>
-              </div>
-              <h2 className="article-title">
-                Votre espace RSS personnel
-              </h2>
-              <p className="article-excerpt">
-                Vous avez {stats.collections.total} collection(s) : {stats.collections.personal} personnelle(s) et {stats.collections.shared} partagée(s). 
-                Commencez par ajouter des flux RSS pour recevoir des articles.
-              </p>
-              <div className="article-actions">
-                <span className="action-btn">📚 {stats.collections.total} Collections</span>
-                <span className="action-btn">📡 {stats.feeds.total} Flux RSS</span>
-                <span className="action-btn">📄 {stats.articles.total} Articles</span>
               </div>
             </div>
             <div className="article-image" style={{ 

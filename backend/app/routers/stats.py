@@ -1,4 +1,4 @@
-# backend/app/routers/stats.py - Nouvelles routes pour les statistiques
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
@@ -15,12 +15,12 @@ def get_dashboard_stats(
 ) -> Dict:
     """Obtenir les statistiques pour le dashboard"""
     
-    # Collections possédées
+    
     owned_collections_count = db.query(models.Collection).filter(
         models.Collection.owner_id == current_user.id
     ).count()
     
-    # Collections partagées accessibles
+    
     shared_collections_count = db.query(models.Collection).join(models.UserCollection).filter(
         and_(
             models.UserCollection.user_id == current_user.id,
@@ -31,7 +31,7 @@ def get_dashboard_stats(
     
     total_collections = owned_collections_count + shared_collections_count
     
-    # Flux RSS accessibles
+    
     owned_feeds = db.query(models.RSSFeed).join(models.Collection).filter(
         models.Collection.owner_id == current_user.id
     )
@@ -46,7 +46,7 @@ def get_dashboard_stats(
     
     total_feeds = owned_feeds.count() + shared_feeds.count()
     
-    # Articles accessibles
+    
     owned_articles = db.query(models.Article).join(models.RSSFeed).join(models.Collection).filter(
         models.Collection.owner_id == current_user.id
     )
@@ -61,7 +61,7 @@ def get_dashboard_stats(
     
     total_articles = owned_articles.count() + shared_articles.count()
     
-    # Articles non lus (ceux qui n'ont pas d'entrée UserArticle ou is_read = False)
+    
     read_articles = db.query(models.UserArticle).filter(
         and_(
             models.UserArticle.user_id == current_user.id,
@@ -71,7 +71,7 @@ def get_dashboard_stats(
     
     unread_articles = total_articles - read_articles
     
-    # Articles favoris
+    
     favorite_articles = db.query(models.UserArticle).filter(
         and_(
             models.UserArticle.user_id == current_user.id,
@@ -79,11 +79,11 @@ def get_dashboard_stats(
         )
     ).count()
     
-    # Statistiques sur les flux
+    
     active_feeds = owned_feeds.filter(models.RSSFeed.is_active == True).count() + \
                   shared_feeds.filter(models.RSSFeed.is_active == True).count()
     
-    # Derniers articles (5 plus récents)
+    
     recent_articles_query = db.query(models.Article).join(models.RSSFeed).join(models.Collection).filter(
         models.Collection.owner_id == current_user.id
     ).union(
@@ -143,12 +143,12 @@ def get_collection_stats(
 ) -> Dict:
     """Obtenir les statistiques d'une collection spécifique"""
     
-    # Vérifier l'accès à la collection
+    
     collection = db.query(models.Collection).filter(models.Collection.id == collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="Collection non trouvée")
     
-    # Vérifier les permissions
+    
     if collection.owner_id != current_user.id:
         user_collection = db.query(models.UserCollection).filter(
             and_(
@@ -160,7 +160,7 @@ def get_collection_stats(
         if not user_collection:
             raise HTTPException(status_code=403, detail="Accès refusé")
     
-    # Statistiques de la collection
+    
     feeds_count = db.query(models.RSSFeed).filter(models.RSSFeed.collection_id == collection_id).count()
     active_feeds_count = db.query(models.RSSFeed).filter(
         and_(
@@ -173,7 +173,7 @@ def get_collection_stats(
         models.RSSFeed.collection_id == collection_id
     ).count()
     
-    # Articles lus par l'utilisateur dans cette collection
+    
     read_articles_count = db.query(models.UserArticle).join(models.Article).join(models.RSSFeed).filter(
         and_(
             models.RSSFeed.collection_id == collection_id,
@@ -184,7 +184,7 @@ def get_collection_stats(
     
     unread_articles_count = articles_count - read_articles_count
     
-    # Articles favoris dans cette collection
+    
     favorite_articles_count = db.query(models.UserArticle).join(models.Article).join(models.RSSFeed).filter(
         and_(
             models.RSSFeed.collection_id == collection_id,
@@ -193,7 +193,7 @@ def get_collection_stats(
         )
     ).count()
     
-    # Statistiques par flux dans la collection
+    
     feeds_stats = []
     feeds = db.query(models.RSSFeed).filter(models.RSSFeed.collection_id == collection_id).all()
     
